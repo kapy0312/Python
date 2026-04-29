@@ -1,9 +1,15 @@
 import requests
 import pandas as pd
 from datetime import datetime
+from dotenv import load_dotenv
+from pathlib import Path
 import os
 
+# 強制指定 .env 的路徑
+load_dotenv(dotenv_path=Path(__file__).parent / ".env")
+
 API_KEY = os.environ.get("ALPHA_VANTAGE_KEY", "")
+# print("API_KEY loaded:", API_KEY[:8] + "..." if API_KEY else "❌ 空的")
 BASE_URL = "https://www.alphavantage.co/query"
 
 
@@ -21,6 +27,8 @@ def get_stock_info(symbol: str) -> dict:
     }
     res = requests.get(BASE_URL, params=params)
     data = res.json()
+
+    print("API 回傳：", data)  # ← 加這行
 
     if not data or "Symbol" not in data:
         return {
