@@ -33,9 +33,12 @@ def get_stock(symbol: str, period: str = "3mo"):
     try:
         # 抓基本資訊
         info = get_stock_info(symbol)
+        print("info:", info)        # ← 加這行
 
         # 抓歷史資料並計算移動平均
         df = get_stock_history(symbol, period)
+        print("df empty:", df.empty)  # ← 加這行
+        print("df shape:", df.shape)  # ← 加這行
 
         if df.empty:
             raise HTTPException(
