@@ -4,6 +4,7 @@ from datetime import datetime
 from dotenv import load_dotenv
 from pathlib import Path
 import os
+import time
 
 # 強制指定 .env 的路徑
 load_dotenv(dotenv_path=Path(__file__).parent / ".env")
@@ -54,6 +55,9 @@ def get_stock_history(symbol: str, period: str = "3mo") -> pd.DataFrame:
     抓取股票歷史價格
     period: 1mo / 3mo / 1y
     """
+    
+    time.sleep(12)  # ← 加這行，等 12 秒再打第二個請求
+    
     # 依照 period 決定抓多少資料
     if period == "1mo":
         av_function = "TIME_SERIES_DAILY"
