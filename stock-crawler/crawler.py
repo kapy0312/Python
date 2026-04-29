@@ -1,85 +1,117 @@
-import yfinance as yf
 import requests
 import pandas as pd
 from datetime import datetime
 import os
 
+API_KEY = os.environ.get("ALPHA_VANTAGE_KEY", "")
+BASE_URL = "https://www.alphavantage.co/query"
+
 
 def get_stock_info(symbol: str) -> dict:
     """
-    抓取股票的基本資訊
-
-    symbol: 股票代號
-    - 台股要加 .TW，例如 台積電 = "2330.TW"
-    - 美股直接輸入，例如 蘋果 = "AAPL"
+    抓取股票基本資訊
+    Alpha Vantage 的股票代號格式：
+    台股：2330.TW → 不支援，改用美股
+    美股：AAPL、TSLA、NVDA
     """
+    params = {
+        "function": "OVERVIEW",
+        "symbol": symbol,
+        "apikey": API_KEY,
+    }
+    res = requests.get(BASE_URL, params=params)
+    data = res.json()
 
-    session = requests.Session()
-    session.headers.update({
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
-    })
+    if not data or "Symbol" not in data:
+        return {
+            "股票代號": symbol,
+            "公司名稱": "N/A",
+            "目前股價": "N/A",
+            "52週最高": data.get("52WeekHigh", "N/A"),
+            "52週最低": data.get("52WeekLow", "N/A"),
+            "市值": data.get("MarketCapitalization", "N/A"),
+            "本益比": data.get("PERatio", "N/A"),
+        }
 
-    # 建立 yfinance 的股票物件
-    stock = yf.Ticker(symbol)
+    # 另外抓即時股價
+    price_params = {
+        "function": "GLOBAL_QUOTE",
+        "symbol": symbol,
+        "apikey": API_KEY,
+    }
+    price_res = requests.get(BASE_URL, params=price_params)
+    price_data = price_res.json().get("Global Quote", {})
 
-    # .info 是一個字典，裡面有公司名稱、市值、本益比等資訊
-    info = stock.info
-
-    # 我們只取我們需要的欄位，避免資訊過多
     return {
         "股票代號": symbol,
-        "公司名稱": info.get("longName", "N/A"),
-        "目前股價": info.get("currentPrice", info.get("regularMarketPrice", "N/A")),
-        "52週最高": info.get("fiftyTwoWeekHigh", "N/A"),
-        "52週最低": info.get("fiftyTwoWeekLow", "N/A"),
-        "市值": info.get("marketCap", "N/A"),
-        "本益比": info.get("trailingPE", "N/A"),
+        "公司名稱": data.get("Name", "N/A"),
+        "目前股價": float(price_data.get("05. price", 0)),
+        "52週最高": float(data.get("52WeekHigh", 0)),
+        "52週最低": float(data.get("52WeekLow", 0)),
+        "市值": data.get("MarketCapitalization", "N/A"),
+        "本益比": data.get("PERatio", "N/A"),
     }
 
 
 def get_stock_history(symbol: str, period: str = "3mo") -> pd.DataFrame:
     """
-    抓取股票的歷史價格
-
-    period 可以是：
-    - "1mo"  = 最近一個月
-    - "3mo"  = 最近三個月（預設）
-    - "1y"   = 最近一年
-    - "5y"   = 最近五年
+    抓取股票歷史價格
+    period: 1mo / 3mo / 1y
     """
+    # 依照 period 決定抓多少資料
+    if period == "1mo":
+        av_function = "TIME_SERIES_DAILY"
+        outputsize = "compact"   # 最近 100 筆
+    elif period == "3mo":
+        av_function = "TIME_SERIES_DAILY"
+        outputsize = "compact"
+    else:
+        av_function = "TIME_SERIES_DAILY"
+        outputsize = "full"      # 完整歷史
 
-    session = requests.Session()
-    session.headers.update({
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
-    })
+    params = {
+        "function": av_function,
+        "symbol": symbol,
+        "outputsize": outputsize,
+        "apikey": API_KEY,
+    }
 
-    stock = yf.Ticker(symbol)
+    res = requests.get(BASE_URL, params=params)
+    data = res.json()
 
-    # .history() 回傳一個 DataFrame（可以想像成 Excel 的工作表）
-    # 欄位包含：Open（開盤）, High（最高）, Low（最低）, Close（收盤）, Volume（成交量）
-    df = stock.history(period=period)
+    time_series = data.get("Time Series (Daily)", {})
 
-    # 把日期格式整理乾淨（去掉時區資訊，只保留日期）
-    df.index = df.index.tz_localize(None)
+    if not time_series:
+        return pd.DataFrame()
 
-    # 四捨五入到小數點後兩位，讓數字更好看
-    df = df.round(2)
+    rows = []
+    for date_str, values in time_series.items():
+        rows.append({
+            "Date": pd.to_datetime(date_str),
+            "Open":   float(values["1. open"]),
+            "High":   float(values["2. high"]),
+            "Low":    float(values["3. low"]),
+            "Close":  float(values["4. close"]),
+            "Volume": int(values["5. volume"]),
+        })
 
-    return df
+    df = pd.DataFrame(rows)
+    df = df.sort_values("Date").set_index("Date")
+
+    # 依照 period 篩選時間範圍
+    now = pd.Timestamp.now()
+    if period == "1mo":
+        df = df[df.index >= now - pd.DateOffset(months=1)]
+    elif period == "3mo":
+        df = df[df.index >= now - pd.DateOffset(months=3)]
+
+    return df.round(2)
 
 
 def save_to_csv(df: pd.DataFrame, symbol: str) -> str:
-    """
-    把 DataFrame 儲存成 CSV 檔案
-    回傳儲存的檔案路徑
-    """
-    # 確保 data 資料夾存在，如果不存在就建立
+    import os
     os.makedirs("data", exist_ok=True)
-
-    # 用日期當檔名，避免每次執行都覆蓋同一個檔案
     today = datetime.now().strftime("%Y%m%d")
     filename = f"data/{symbol}_{today}.csv"
-
-    df.to_csv(filename, encoding="utf-8-sig")  # utf-8-sig 讓 Excel 能正確顯示中文
-
+    df.to_csv(filename, encoding="utf-8-sig")
     return filename
