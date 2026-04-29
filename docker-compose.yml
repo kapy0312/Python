@@ -1,0 +1,14 @@
+services:
+  backend:
+    build: ./stock-crawler
+    ports:
+      - "8000:8000"
+    container_name: stock-backend
+
+  frontend:
+    build: ./stock-frontend
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+    container_name: stock-frontend

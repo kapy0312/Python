@@ -6,7 +6,7 @@ export default defineConfig({
   plugins: [react()],
   server: {
     proxy: {
-      '/stock': 'http://127.0.0.1:8000',  // ← 這裡
+      '/stock': 'http://backend:8000',  // ← 改成容器名稱
     }
   }
 })
