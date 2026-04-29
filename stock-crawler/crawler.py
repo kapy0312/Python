@@ -87,6 +87,9 @@ def get_stock_history(symbol: str, period: str = "3mo") -> pd.DataFrame:
     res = requests.get(BASE_URL, params=params)
     data = res.json()
 
+    print("歷史資料回傳 keys：", list(data.keys()))  # ← 加這行
+    print("歷史資料內容前100字：", str(data)[:100])  # ← 加這行
+
     time_series = data.get("Time Series (Daily)", {})
 
     if not time_series:
@@ -123,4 +126,3 @@ def save_to_csv(df: pd.DataFrame, symbol: str) -> str:
     filename = f"data/{symbol}_{today}.csv"
     df.to_csv(filename, encoding="utf-8-sig")
     return filename
-
