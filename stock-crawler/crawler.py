@@ -123,3 +123,4 @@ def save_to_csv(df: pd.DataFrame, symbol: str) -> str:
     filename = f"data/{symbol}_{today}.csv"
     df.to_csv(filename, encoding="utf-8-sig")
     return filename
+

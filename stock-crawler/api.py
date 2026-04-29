@@ -129,3 +129,12 @@ def get_ai_analysis(symbol: str, period: str = "3mo"):
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/debug")
+def debug():
+    import os
+    return {
+        "ALPHA_VANTAGE_KEY": os.environ.get("ALPHA_VANTAGE_KEY", "❌ 空的")[:8] + "...",
+        "GROQ_API_KEY": os.environ.get("GROQ_API_KEY", "❌ 空的")[:8] + "...",
+    }
