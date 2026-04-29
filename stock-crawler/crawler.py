@@ -56,7 +56,7 @@ def get_stock_history(symbol: str, period: str = "3mo") -> pd.DataFrame:
     period: 1mo / 3mo / 1y
     """
 
-    time.sleep(12)  # ← 加這行，等 12 秒再打第二個請求
+    time.sleep(3)  # ← 加這行，等 12 秒再打第二個請求
 
     # 依照 period 決定抓多少資料
     if period == "1mo":
