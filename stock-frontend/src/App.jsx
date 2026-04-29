@@ -13,6 +13,8 @@ function App() {
   const [loading, setLoading] = useState(false)  // 載入中
   const [error, setError] = useState("")         // 錯誤訊息
 
+  const API_URL = import.meta.env.VITE_API_URL || ''
+
   async function handleSearch() {
     if (!symbol.trim()) return
 
@@ -24,8 +26,8 @@ function App() {
 
     try {
       const [infoRes, historyRes] = await Promise.all([
-        fetch(`/stock/${symbol.trim().toUpperCase()}?period=${period}`),
-        fetch(`/stock/${symbol.trim().toUpperCase()}/history?period=${period}`)
+        fetch(`${API_URL}/stock/${symbol.trim().toUpperCase()}?period=${period}`),
+        fetch(`${API_URL}/stock/${symbol.trim().toUpperCase()}/history?period=${period}`)
       ])
 
       if (!infoRes.ok) {
@@ -53,7 +55,7 @@ function App() {
 
     try {
       const res = await fetch(
-        `/stock/${symbol.trim().toUpperCase()}/ai?period=${period}`
+        `${API_URL}/stock/${symbol.trim().toUpperCase()}/ai?period=${period}`
       )
       const data = await res.json()
       setAiAnalysis(data.AI分析)
