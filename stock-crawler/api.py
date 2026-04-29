@@ -1,9 +1,19 @@
 from fastapi import FastAPI, HTTPException
 from crawler import get_stock_info, get_stock_history
 from analyzer import calculate_moving_average, get_summary
+from ai_analyzer import analyze_stock   # ← 加在最上面的 import
+from fastapi.middleware.cors import CORSMiddleware
 
 # 建立 FastAPI 應用程式
 app = FastAPI(title="股票資料 API", version="1.0.0")
+
+# 加在 app 建立後面
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],   # 之後換成你的 Render 前端網址
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 @app.get("/")
@@ -82,6 +92,38 @@ def get_history(symbol: str, period: str = "3mo"):
             })
 
         return {"股票代號": symbol, "歷史資料": result}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/stock/{symbol}/ai")
+def get_ai_analysis(symbol: str, period: str = "3mo"):
+    """
+    用 AI 分析股票資料
+    """
+    try:
+        info = get_stock_info(symbol)
+        df = get_stock_history(symbol, period)
+
+        if df.empty:
+            raise HTTPException(
+                status_code=404,
+                detail=f"找不到股票：{symbol}"
+            )
+
+        df = calculate_moving_average(df)
+        summary = get_summary(df)
+
+        # 呼叫 AI 分析
+        analysis = analyze_stock(info, summary)
+
+        return {
+            "股票代號": symbol,
+            "AI分析": analysis
+        }
 
     except HTTPException:
         raise

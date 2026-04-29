@@ -4,6 +4,8 @@ services:
     ports:
       - "8000:8000"
     container_name: stock-backend
+    environment:
+      - GROQ_API_KEY=${GROQ_API_KEY}   # ← 加這行
 
   frontend:
     build: ./stock-frontend
@@ -12,3 +14,5 @@ services:
     depends_on:
       - backend
     container_name: stock-frontend
+    environment:
+      - VITE_BACKEND_URL=http://backend:8000   # ← 加這行

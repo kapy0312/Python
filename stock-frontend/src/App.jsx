@@ -8,6 +8,8 @@ function App() {
   const [period, setPeriod] = useState("3mo")   // 查詢期間
   const [stockData, setStockData] = useState(null)  // 基本資訊 + 統計摘要
   const [historyData, setHistoryData] = useState([]) // 歷史K線
+  const [aiAnalysis, setAiAnalysis] = useState("")
+  const [aiLoading, setAiLoading] = useState(false)
   const [loading, setLoading] = useState(false)  // 載入中
   const [error, setError] = useState("")         // 錯誤訊息
 
@@ -18,9 +20,9 @@ function App() {
     setError("")
     setStockData(null)
     setHistoryData([])
+    setAiAnalysis("")   // ← 加這行
 
     try {
-      // 同時發兩個請求
       const [infoRes, historyRes] = await Promise.all([
         fetch(`/stock/${symbol.trim().toUpperCase()}?period=${period}`),
         fetch(`/stock/${symbol.trim().toUpperCase()}/history?period=${period}`)
@@ -40,6 +42,25 @@ function App() {
       setError(err.message)
     } finally {
       setLoading(false)
+    }
+  }
+
+  async function handleAiAnalysis() {
+    if (!symbol.trim()) return
+
+    setAiLoading(true)
+    setAiAnalysis("")
+
+    try {
+      const res = await fetch(
+        `/stock/${symbol.trim().toUpperCase()}/ai?period=${period}`
+      )
+      const data = await res.json()
+      setAiAnalysis(data.AI分析)
+    } catch (err) {
+      setAiAnalysis("AI 分析失敗，請稍後再試")
+    } finally {
+      setAiLoading(false)
     }
   }
 
@@ -82,6 +103,23 @@ function App() {
             summary={stockData.統計摘要}
           />
           <StockChart data={historyData} />
+
+          {/* AI 分析按鈕 */}
+          <button
+            className="ai-btn"
+            onClick={handleAiAnalysis}
+            disabled={aiLoading}
+          >
+            {aiLoading ? "AI 分析中..." : "🤖 請 AI 分析這支股票"}
+          </button>
+
+          {/* AI 分析結果 */}
+          {aiAnalysis && (
+            <div className="card ai-result">
+              <h3>🤖 AI 分析報告</h3>
+              <pre>{aiAnalysis}</pre>
+            </div>
+          )}
         </>
       )}
     </div>

@@ -169,3 +169,34 @@ h3 {
 .summary-row span:last-child {
   color: #e2e8f0;
 }
+
+.ai-btn {
+  width: 100%;
+  padding: 14px;
+  background: #5c3dc4;
+  border: none;
+  border-radius: 8px;
+  color: #fff;
+  font-size: 15px;
+  cursor: pointer;
+  margin-bottom: 16px;
+  transition: background 0.2s;
+}
+
+.ai-btn:hover {
+  background: #7c5ce4;
+}
+
+.ai-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.ai-result pre {
+  white-space: pre-wrap;
+  font-family: -apple-system, sans-serif;
+  font-size: 14px;
+  line-height: 1.8;
+  color: #e2e8f0;
+  text-align: left;   /* ← 加這行 */
+}
