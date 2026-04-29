@@ -55,9 +55,9 @@ def get_stock_history(symbol: str, period: str = "3mo") -> pd.DataFrame:
     抓取股票歷史價格
     period: 1mo / 3mo / 1y
     """
-    
+
     time.sleep(12)  # ← 加這行，等 12 秒再打第二個請求
-    
+
     # 依照 period 決定抓多少資料
     if period == "1mo":
         av_function = "TIME_SERIES_DAILY"
@@ -80,7 +80,7 @@ def get_stock_history(symbol: str, period: str = "3mo") -> pd.DataFrame:
     data = res.json()
 
     print("歷史資料回傳 keys：", list(data.keys()))  # ← 加這行
-    print("歷史資料內容前100字：", str(data)[:100])  # ← 加這行
+    print("歷史資料完整回傳：", data)  # ← 改成印完整內容
 
     time_series = data.get("Time Series (Daily)", {})
 
