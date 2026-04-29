@@ -24,38 +24,40 @@ def root():
 
 @app.get("/stock/{symbol}")
 def get_stock(symbol: str, period: str = "3mo"):
-    """
-    查詢股票基本資訊 + 統計摘要
-
-    - symbol: 股票代號，例如 2330.TW 或 AAPL
-    - period: 查詢期間，預設 3mo（可傳 1mo / 3mo / 1y）
-    """
     try:
-        # 抓基本資訊
         info = get_stock_info(symbol)
-        print("info:", info)        # ← 加這行
-
-        # 抓歷史資料並計算移動平均
         df = get_stock_history(symbol, period)
-        print("df empty:", df.empty)  # ← 加這行
-        print("df shape:", df.shape)  # ← 加這行
 
         if df.empty:
-            raise HTTPException(
-                status_code=404,
-                detail=f"找不到股票：{symbol}"
-            )
+            raise HTTPException(status_code=404, detail=f"找不到股票：{symbol}")
 
         df = calculate_moving_average(df)
         summary = get_summary(df)
 
+        # 把歷史資料也一起回傳
+        recent = df[["Open", "High", "Low", "Close",
+                     "Volume", "MA5", "MA20"]].tail(60)
+        history = []
+        for date, row in recent.iterrows():
+            history.append({
+                "日期": str(date.date()),
+                "開盤": row["Open"],
+                "最高": row["High"],
+                "最低": row["Low"],
+                "收盤": row["Close"],
+                "成交量": int(row["Volume"]),
+                "MA5": row["MA5"] if not str(row["MA5"]) == "nan" else None,
+                "MA20": row["MA20"] if not str(row["MA20"]) == "nan" else None,
+            })
+
         return {
             "基本資訊": info,
             "統計摘要": summary,
+            "歷史資料": history,   # ← 新增
         }
 
     except HTTPException:
-        raise  # 把 404 原封不動往上拋
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

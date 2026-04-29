@@ -25,20 +25,18 @@ function App() {
     setAiAnalysis("")   // ← 加這行
 
     try {
-      const [infoRes, historyRes] = await Promise.all([
-        fetch(`${API_URL}/stock/${symbol.trim().toUpperCase()}?period=${period}`),
-        fetch(`${API_URL}/stock/${symbol.trim().toUpperCase()}/history?period=${period}`)
-      ])
+      const res = await fetch(
+        `${API_URL}/stock/${symbol.trim().toUpperCase()}?period=${period}`
+      )
 
-      if (!infoRes.ok) {
+      if (!res.ok) {
         throw new Error("找不到股票，請確認代號是否正確")
       }
 
-      const infoData = await infoRes.json()
-      const histData = await historyRes.json()
+      const data = await res.json()
 
-      setStockData(infoData)
-      setHistoryData(histData.歷史資料 || [])
+      setStockData(data)
+      setHistoryData(data.歷史資料 || [])   // ← 直接從同一個回應拿
 
     } catch (err) {
       setError(err.message)
