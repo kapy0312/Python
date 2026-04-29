@@ -14,12 +14,6 @@ BASE_URL = "https://www.alphavantage.co/query"
 
 
 def get_stock_info(symbol: str) -> dict:
-    """
-    抓取股票基本資訊
-    Alpha Vantage 的股票代號格式：
-    台股：2330.TW → 不支援，改用美股
-    美股：AAPL、TSLA、NVDA
-    """
     params = {
         "function": "OVERVIEW",
         "symbol": symbol,
@@ -28,32 +22,26 @@ def get_stock_info(symbol: str) -> dict:
     res = requests.get(BASE_URL, params=params)
     data = res.json()
 
-    print("API 回傳：", data)  # ← 加這行
+    print("API 回傳：", data.get("Symbol"), data.get("Name"))
 
     if not data or "Symbol" not in data:
         return {
             "股票代號": symbol,
             "公司名稱": "N/A",
             "目前股價": "N/A",
-            "52週最高": data.get("52WeekHigh", "N/A"),
-            "52週最低": data.get("52WeekLow", "N/A"),
-            "市值": data.get("MarketCapitalization", "N/A"),
-            "本益比": data.get("PERatio", "N/A"),
+            "52週最高": "N/A",
+            "52週最低": "N/A",
+            "市值": "N/A",
+            "本益比": "N/A",
         }
 
-    # 另外抓即時股價
-    price_params = {
-        "function": "GLOBAL_QUOTE",
-        "symbol": symbol,
-        "apikey": API_KEY,
-    }
-    price_res = requests.get(BASE_URL, params=price_params)
-    price_data = price_res.json().get("Global Quote", {})
+    # 用 200日移動平均當作近似股價（OVERVIEW 沒有即時股價）
+    price = float(data.get("200DayMovingAverage", 0))
 
     return {
         "股票代號": symbol,
         "公司名稱": data.get("Name", "N/A"),
-        "目前股價": float(price_data.get("05. price", 0)),
+        "目前股價": price,
         "52週最高": float(data.get("52WeekHigh", 0)),
         "52週最低": float(data.get("52WeekLow", 0)),
         "市值": data.get("MarketCapitalization", "N/A"),
