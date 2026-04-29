@@ -1,27 +1,28 @@
+#api.py
+
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from crawler import get_stock_info, get_stock_history
 from analyzer import calculate_moving_average, get_summary
-from ai_analyzer import analyze_stock   # ← 加在最上面的 import
-from fastapi.middleware.cors import CORSMiddleware
+from ai_analyzer import analyze_stock
 
-# 建立 FastAPI 應用程式
 app = FastAPI(title="股票資料 API", version="1.0.0")
 
-# 加在 app 建立後面
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],   # 之後換成你的 Render 前端網址
+    allow_origins=["*"],
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 
+# ── 首頁 ──────────────────────────────────────
 @app.get("/")
 def root():
-    """首頁，確認 API 有在運作"""
     return {"message": "股票 API 運作中 🚀"}
 
 
+# ── 主要端點：基本資訊 + 統計 + K線 ──────────
 @app.get("/stock/{symbol}")
 def get_stock(symbol: str, period: str = "3mo"):
     try:
@@ -34,11 +35,15 @@ def get_stock(symbol: str, period: str = "3mo"):
         df = calculate_moving_average(df)
         summary = get_summary(df)
 
-        # 把歷史資料也一起回傳
-        recent = df[["Open", "High", "Low", "Close",
-                     "Volume", "MA5", "MA20"]].tail(60)
+        # Alpha Vantage 額度用完時，用 yfinance 資料補股價
+        if info["目前股價"] == "N/A" or info["目前股價"] == 0:
+            info["目前股價"] = float(df["Close"].iloc[-1])
+            info["52週最高"] = float(df["High"].max())
+            info["52週最低"] = float(df["Low"].min())
+
+        # 整理近 60 筆 K 線
         history = []
-        for date, row in recent.iterrows():
+        for date, row in df[["Open", "High", "Low", "Close", "Volume", "MA5", "MA20"]].tail(60).iterrows():
             history.append({
                 "日期": str(date.date()),
                 "開盤": row["Open"],
@@ -46,14 +51,14 @@ def get_stock(symbol: str, period: str = "3mo"):
                 "最低": row["Low"],
                 "收盤": row["Close"],
                 "成交量": int(row["Volume"]),
-                "MA5": row["MA5"] if not str(row["MA5"]) == "nan" else None,
-                "MA20": row["MA20"] if not str(row["MA20"]) == "nan" else None,
+                "MA5": None if str(row["MA5"]) == "nan" else row["MA5"],
+                "MA20": None if str(row["MA20"]) == "nan" else row["MA20"],
             })
 
         return {
             "基本資訊": info,
             "統計摘要": summary,
-            "歷史資料": history,   # ← 新增
+            "歷史資料": history,
         }
 
     except HTTPException:
@@ -62,73 +67,21 @@ def get_stock(symbol: str, period: str = "3mo"):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.get("/stock/{symbol}/history")
-def get_history(symbol: str, period: str = "3mo"):
-    """
-    查詢股票歷史價格（最近 10 筆）
-    """
-    try:
-        df = get_stock_history(symbol, period)
-
-        if df.empty:
-            raise HTTPException(
-                status_code=404,
-                detail=f"找不到股票：{symbol}"
-            )
-
-        df = calculate_moving_average(df)
-
-        # 取最近 10 筆，轉成 dict 格式回傳
-        recent = df[["Open", "High", "Low", "Close",
-                     "Volume", "MA5", "MA20"]].tail(10)
-
-        # 把 DataFrame 轉成 JSON 可以接受的格式
-        result = []
-        for date, row in recent.iterrows():
-            result.append({
-                "日期": str(date.date()),
-                "開盤": row["Open"],
-                "最高": row["High"],
-                "最低": row["Low"],
-                "收盤": row["Close"],
-                "成交量": int(row["Volume"]),
-                "MA5": row["MA5"] if not str(row["MA5"]) == "nan" else None,
-                "MA20": row["MA20"] if not str(row["MA20"]) == "nan" else None,
-            })
-
-        return {"股票代號": symbol, "歷史資料": result}
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
+# ── AI 分析 ───────────────────────────────────
 @app.get("/stock/{symbol}/ai")
 def get_ai_analysis(symbol: str, period: str = "3mo"):
-    """
-    用 AI 分析股票資料
-    """
     try:
         info = get_stock_info(symbol)
         df = get_stock_history(symbol, period)
 
         if df.empty:
-            raise HTTPException(
-                status_code=404,
-                detail=f"找不到股票：{symbol}"
-            )
+            raise HTTPException(status_code=404, detail=f"找不到股票：{symbol}")
 
         df = calculate_moving_average(df)
         summary = get_summary(df)
-
-        # 呼叫 AI 分析
         analysis = analyze_stock(info, summary)
 
-        return {
-            "股票代號": symbol,
-            "AI分析": analysis
-        }
+        return {"股票代號": symbol, "AI分析": analysis}
 
     except HTTPException:
         raise
@@ -136,10 +89,15 @@ def get_ai_analysis(symbol: str, period: str = "3mo"):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+# ── 環境變數確認 ──────────────────────────────
 @app.get("/debug")
 def debug():
     import os
+    def mask(key): 
+        val = os.environ.get(key, "❌ 空的")
+        return val[:8] + "..." if val != "❌ 空的" else val
+
     return {
-        "ALPHA_VANTAGE_KEY": os.environ.get("ALPHA_VANTAGE_KEY", "❌ 空的")[:8] + "...",
-        "GROQ_API_KEY": os.environ.get("GROQ_API_KEY", "❌ 空的")[:8] + "...",
+        "ALPHA_VANTAGE_KEY": mask("ALPHA_VANTAGE_KEY"),
+        "GROQ_API_KEY": mask("GROQ_API_KEY"),
     }

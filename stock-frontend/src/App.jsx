@@ -3,40 +3,40 @@ import StockCard from "./components/StockCard"
 import StockChart from "./components/StockChart"
 import "./App.css"
 
+const API_URL = import.meta.env.VITE_API_URL || ""
+
 function App() {
-  const [symbol, setSymbol] = useState("")      // 使用者輸入的股票代號
-  const [period, setPeriod] = useState("3mo")   // 查詢期間
-  const [stockData, setStockData] = useState(null)  // 基本資訊 + 統計摘要
-  const [historyData, setHistoryData] = useState([]) // 歷史K線
+  const [symbol, setSymbol] = useState("")
+  const [period, setPeriod] = useState("3mo")
+  const [stockData, setStockData] = useState(null)
+  const [historyData, setHistoryData] = useState([])
   const [aiAnalysis, setAiAnalysis] = useState("")
+  const [loading, setLoading] = useState(false)
   const [aiLoading, setAiLoading] = useState(false)
-  const [loading, setLoading] = useState(false)  // 載入中
-  const [error, setError] = useState("")         // 錯誤訊息
+  const [error, setError] = useState("")
 
-  const API_URL = import.meta.env.VITE_API_URL || ''
-
+  // ── 查詢股票 ────────────────────────────────
   async function handleSearch() {
-    if (!symbol.trim()) return
+    const s = symbol.trim().toUpperCase()
+    if (!s) return
 
     setLoading(true)
     setError("")
     setStockData(null)
     setHistoryData([])
-    setAiAnalysis("")   // ← 加這行
+    setAiAnalysis("")
 
     try {
-      const res = await fetch(
-        `${API_URL}/stock/${symbol.trim().toUpperCase()}?period=${period}`
-      )
+      const res = await fetch(`${API_URL}/stock/${s}?period=${period}`)
 
       if (!res.ok) {
-        throw new Error("找不到股票，請確認代號是否正確")
+        const body = await res.json().catch(() => ({}))
+        throw new Error(body.detail || "找不到股票，請確認代號是否正確")
       }
 
       const data = await res.json()
-
       setStockData(data)
-      setHistoryData(data.歷史資料 || [])   // ← 直接從同一個回應拿
+      setHistoryData(data.歷史資料 || [])
 
     } catch (err) {
       setError(err.message)
@@ -45,35 +45,39 @@ function App() {
     }
   }
 
+  // ── AI 分析 ──────────────────────────────────
   async function handleAiAnalysis() {
-    if (!symbol.trim()) return
+    const s = symbol.trim().toUpperCase()
+    if (!s) return
 
     setAiLoading(true)
     setAiAnalysis("")
 
     try {
-      const res = await fetch(
-        `${API_URL}/stock/${symbol.trim().toUpperCase()}/ai?period=${period}`
-      )
+      const res = await fetch(`${API_URL}/stock/${s}/ai?period=${period}`)
+
+      if (!res.ok) throw new Error("AI 分析請求失敗")
+
       const data = await res.json()
-      setAiAnalysis(data.AI分析)
+      setAiAnalysis(data.AI分析 || "AI 未回傳結果")
+
     } catch (err) {
-      setAiAnalysis("AI 分析失敗，請稍後再試")
+      setAiAnalysis("❌ AI 分析失敗，請稍後再試")
     } finally {
       setAiLoading(false)
     }
   }
 
-  // 按 Enter 也能查詢
   function handleKeyDown(e) {
     if (e.key === "Enter") handleSearch()
   }
 
+  // ── 畫面 ─────────────────────────────────────
   return (
     <div className="container">
       <h1>📈 股票查詢系統</h1>
 
-      {/* 搜尋區 */}
+      {/* 搜尋列 */}
       <div className="search-bar">
         <input
           type="text"
@@ -93,7 +97,7 @@ function App() {
       </div>
 
       {/* 錯誤訊息 */}
-      {error && <div className="error">{error}</div>}
+      {error && <div className="error">⚠️ {error}</div>}
 
       {/* 查詢結果 */}
       {stockData && (
@@ -102,7 +106,8 @@ function App() {
             info={stockData.基本資訊}
             summary={stockData.統計摘要}
           />
-          <StockChart data={historyData} />
+
+          {historyData.length > 0 && <StockChart data={historyData} />}
 
           {/* AI 分析按鈕 */}
           <button
@@ -110,7 +115,7 @@ function App() {
             onClick={handleAiAnalysis}
             disabled={aiLoading}
           >
-            {aiLoading ? "AI 分析中..." : "🤖 請 AI 分析這支股票"}
+            {aiLoading ? "⏳ AI 分析中..." : "🤖 請 AI 分析這支股票"}
           </button>
 
           {/* AI 分析結果 */}

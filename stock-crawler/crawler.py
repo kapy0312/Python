@@ -1,120 +1,95 @@
-import requests
-import pandas as pd
-from datetime import datetime
-from dotenv import load_dotenv
-from pathlib import Path
-import os
-import time
+# crawler.py
 
-# 強制指定 .env 的路徑
+import requests
+import yfinance as yf
+import pandas as pd
+import os
+from pathlib import Path
+from dotenv import load_dotenv
+
 load_dotenv(dotenv_path=Path(__file__).parent / ".env")
 
-API_KEY = os.environ.get("ALPHA_VANTAGE_KEY", "")
-# print("API_KEY loaded:", API_KEY[:8] + "..." if API_KEY else "❌ 空的")
+ALPHA_VANTAGE_KEY = os.environ.get("ALPHA_VANTAGE_KEY", "")
 BASE_URL = "https://www.alphavantage.co/query"
 
 
 def get_stock_info(symbol: str) -> dict:
-    params = {
-        "function": "OVERVIEW",
-        "symbol": symbol,
-        "apikey": API_KEY,
-    }
-    res = requests.get(BASE_URL, params=params)
-    data = res.json()
+    """基本資訊：優先 Alpha Vantage，額度用完自動改用 yfinance"""
 
-    print("API 回傳：", data.get("Symbol"), data.get("Name"))
+    # ── 先試 Alpha Vantage ──────────────────────
+    try:
+        res = requests.get(BASE_URL, params={
+            "function": "OVERVIEW",
+            "symbol": symbol,
+            "apikey": ALPHA_VANTAGE_KEY,
+        }, timeout=10)
+        data = res.json()
 
-    if not data or "Symbol" not in data:
+        if "Symbol" in data:
+            return {
+                "股票代號": symbol,
+                "公司名稱": data.get("Name", "N/A"),
+                "目前股價": float(data.get("200DayMovingAverage") or 0),
+                "52週最高": float(data.get("52WeekHigh") or 0),
+                "52週最低": float(data.get("52WeekLow") or 0),
+                "市值": data.get("MarketCapitalization", "N/A"),
+                "本益比": data.get("PERatio", "N/A"),
+            }
+
+        print(f"⚠️ Alpha Vantage 無資料，改用 yfinance 備援")
+
+    except Exception as e:
+        print(f"⚠️ Alpha Vantage 錯誤: {e}，改用 yfinance 備援")
+
+    # ── Alpha Vantage 失敗 → yfinance 備援 ──────
+    try:
+        ticker = yf.Ticker(symbol)
+        info = ticker.info  # yfinance 的基本資訊
+
         return {
             "股票代號": symbol,
-            "公司名稱": "N/A",
-            "目前股價": "N/A",
-            "52週最高": "N/A",
-            "52週最低": "N/A",
+            "公司名稱": info.get("longName") or info.get("shortName") or symbol,
+            "目前股價": info.get("currentPrice") or info.get("regularMarketPrice") or 0,
+            "52週最高": info.get("fiftyTwoWeekHigh") or 0,
+            "52週最低": info.get("fiftyTwoWeekLow") or 0,
+            "市值": str(info.get("marketCap", "N/A")),
+            "本益比": str(info.get("trailingPE", "N/A")),
+        }
+
+    except Exception as e:
+        print(f"❌ yfinance 備援也失敗: {e}")
+        return {
+            "股票代號": symbol,
+            "公司名稱": symbol,   # 最後保底：直接顯示代號
+            "目前股價": 0,
+            "52週最高": 0,
+            "52週最低": 0,
             "市值": "N/A",
             "本益比": "N/A",
         }
 
-    # 用 200日移動平均當作近似股價（OVERVIEW 沒有即時股價）
-    price = float(data.get("200DayMovingAverage", 0))
-
-    return {
-        "股票代號": symbol,
-        "公司名稱": data.get("Name", "N/A"),
-        "目前股價": price,
-        "52週最高": float(data.get("52WeekHigh", 0)),
-        "52週最低": float(data.get("52WeekLow", 0)),
-        "市值": data.get("MarketCapitalization", "N/A"),
-        "本益比": data.get("PERatio", "N/A"),
-    }
-
 
 def get_stock_history(symbol: str, period: str = "3mo") -> pd.DataFrame:
-    """
-    抓取股票歷史價格
-    period: 1mo / 3mo / 1y
-    """
+    try:
+        # yf.download 比 Ticker.history 在雲端更穩定
+        df = yf.download(
+            symbol,
+            period=period,
+            progress=False,   # 關掉進度條
+            auto_adjust=True  # 自動調整除權息
+        )
 
-    time.sleep(3)  # ← 加這行，等 12 秒再打第二個請求
+        if df.empty:
+            print(f"⚠️ yfinance 回傳空資料: {symbol}")
+            return pd.DataFrame()
 
-    # 依照 period 決定抓多少資料
-    if period == "1mo":
-        av_function = "TIME_SERIES_DAILY"
-        outputsize = "compact"   # 最近 100 筆
-    elif period == "3mo":
-        av_function = "TIME_SERIES_DAILY"
-        outputsize = "compact"
-    else:
-        av_function = "TIME_SERIES_DAILY"
-        outputsize = "full"      # 完整歷史
+        # yf.download 回傳多層欄位，需要壓平
+        if isinstance(df.columns, pd.MultiIndex):
+            df.columns = df.columns.get_level_values(0)
 
-    params = {
-        "function": av_function,
-        "symbol": symbol,
-        "outputsize": outputsize,
-        "apikey": API_KEY,
-    }
+        df.index = pd.to_datetime(df.index).tz_localize(None)
+        return df.round(2)
 
-    res = requests.get(BASE_URL, params=params)
-    data = res.json()
-
-    print("歷史資料回傳 keys：", list(data.keys()))  # ← 加這行
-    print("歷史資料完整回傳：", data)  # ← 改成印完整內容
-
-    time_series = data.get("Time Series (Daily)", {})
-
-    if not time_series:
+    except Exception as e:
+        print(f"❌ get_stock_history 錯誤: {e}")
         return pd.DataFrame()
-
-    rows = []
-    for date_str, values in time_series.items():
-        rows.append({
-            "Date": pd.to_datetime(date_str),
-            "Open":   float(values["1. open"]),
-            "High":   float(values["2. high"]),
-            "Low":    float(values["3. low"]),
-            "Close":  float(values["4. close"]),
-            "Volume": int(values["5. volume"]),
-        })
-
-    df = pd.DataFrame(rows)
-    df = df.sort_values("Date").set_index("Date")
-
-    # 依照 period 篩選時間範圍
-    now = pd.Timestamp.now()
-    if period == "1mo":
-        df = df[df.index >= now - pd.DateOffset(months=1)]
-    elif period == "3mo":
-        df = df[df.index >= now - pd.DateOffset(months=3)]
-
-    return df.round(2)
-
-
-def save_to_csv(df: pd.DataFrame, symbol: str) -> str:
-    import os
-    os.makedirs("data", exist_ok=True)
-    today = datetime.now().strftime("%Y%m%d")
-    filename = f"data/{symbol}_{today}.csv"
-    df.to_csv(filename, encoding="utf-8-sig")
-    return filename
