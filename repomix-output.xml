@@ -1,10 +1,10 @@
-This file is a merged representation of the entire codebase, combined into a single document by Repomix.
+This file is a merged representation of a subset of the codebase, containing specifically included files, combined into a single document by Repomix.
 
 <file_summary>
 This section contains a summary of this file.
 
 <purpose>
-This file contains a packed representation of the entire repository's contents.
+This file contains a packed representation of a subset of the repository's contents that is considered the most important context.
 It is designed to be easily consumable by AI systems for analysis, code review,
 or other automated processes.
 </purpose>
@@ -32,6 +32,7 @@ The content is organized as follows:
 <notes>
 - Some files may have been excluded based on .gitignore rules and Repomix's configuration
 - Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
+- Only files matching these patterns are included: stock-crawler/**, stock-frontend/**, docker-compose.yml
 - Files matching patterns in .gitignore are excluded
 - Files matching default ignore patterns are excluded
 - Files are sorted by Git change count (files with more changes are at the bottom)
@@ -40,42 +41,40 @@ The content is organized as follows:
 </file_summary>
 
 <directory_structure>
-[stock-crawler]/
-  .repomixignore
-  ai_analyzer.py
-  analyzer.py
-  api.py
-  crawler.py
-  Dockerfile
-  main.py
-  requirements.txt
-
-[stock-frontend]/
-  .gitignore
-  .repomixignore
-  Dockerfile
-  eslint.config.js
-  index.html
-  package.json
-  public/favicon.svg
-  public/icons.svg
-  README.md
-  src/App.css
-  src/App.jsx
-  src/assets/hero.png
-  src/assets/react.svg
-  src/assets/vite.svg
-  src/components/StockCard.jsx
-  src/components/StockChart.jsx
-  src/index.css
-  src/main.jsx
-  vite.config.js
+docker-compose.yml
+stock-crawler/.repomixignore
+stock-crawler/ai_analyzer.py
+stock-crawler/analyzer.py
+stock-crawler/api.py
+stock-crawler/crawler.py
+stock-crawler/Dockerfile
+stock-crawler/main.py
+stock-crawler/requirements.txt
+stock-frontend/.gitignore
+stock-frontend/.repomixignore
+stock-frontend/Dockerfile
+stock-frontend/eslint.config.js
+stock-frontend/index.html
+stock-frontend/package.json
+stock-frontend/public/favicon.svg
+stock-frontend/public/icons.svg
+stock-frontend/README.md
+stock-frontend/src/App.css
+stock-frontend/src/App.jsx
+stock-frontend/src/assets/hero.png
+stock-frontend/src/assets/react.svg
+stock-frontend/src/assets/vite.svg
+stock-frontend/src/components/StockCard.jsx
+stock-frontend/src/components/StockChart.jsx
+stock-frontend/src/index.css
+stock-frontend/src/main.jsx
+stock-frontend/vite.config.js
 </directory_structure>
 
 <files>
 This section contains the contents of the repository's files.
 
-<file path=".repomixignore">
+<file path="stock-crawler/.repomixignore">
 .env
 venv/
 __pycache__/
@@ -83,77 +82,7 @@ __pycache__/
 data/
 </file>
 
-<file path=".repomixignore">
-.env
-venv/
-__pycache__/
-*.csv
-data/
-</file>
-
-<file path="ai_analyzer.py">
-# ai_analyzer.py
-
-import os
-from groq import Groq
-from dotenv import load_dotenv
-
-load_dotenv()
-
-client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
-
-
-def analyze_stock(info: dict, summary: dict) -> str:
-    """
-    把股票資料傳給 AI，請它分析並給出建議
-    """
-
-    prompt = f"""
-以下是一支股票的近期資料：
-
-公司：{info.get('公司名稱')}（{info.get('股票代號')}）
-目前股價：{info.get('目前股價')}
-52週區間：{info.get('52週最低')} ~ {info.get('52週最高')}
-本益比：{info.get('本益比')}
-分析期間：{summary.get('分析期間')}
-期間漲跌：{summary.get('起始收盤價')} → {summary.get('最新收盤價')}（{summary.get('期間漲跌幅')}）
-期間高低：{summary.get('期間最高價')} / {summary.get('期間最低價')}
-平均成交量：{summary.get('平均成交量')}
-
-請給出你的分析，用自然的口吻說明：
-- 這支股票目前處於什麼狀況
-- 這段期間的走勢說明了什麼
-- 有什麼值得注意的地方
-- 你的整體看法
-
-風格要像一個朋友在幫你看股票，直接、有觀點、不廢話。
-最後加一行免責聲明即可。
-"""
-
-    response = client.chat.completions.create(
-        model="llama-3.3-70b-versatile",
-        messages=[
-            {
-                "role": "system",
-                "content": (
-                    "你是一個有點毒舌但很準的股票老手，"
-                    "用繁體中文說話，講重點不廢話，"
-                    "敢說漲也敢說跌，不給模糊答案。"
-                )
-            },
-            {
-                "role": "user",
-                "content": prompt
-            }
-        ],
-        temperature=0.85,
-        max_tokens=1024,
-    )
-
-    return response.choices[0].message.content
-</file>
-
-<file path="analyzer.py">
+<file path="stock-crawler/analyzer.py">
 import pandas as pd
 
 def calculate_moving_average(df: pd.DataFrame) -> pd.DataFrame:
@@ -194,211 +123,7 @@ def get_summary(df: pd.DataFrame) -> dict:
     }
 </file>
 
-<file path="api.py">
-#api.py
-
-from fastapi import FastAPI, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
-from crawler import get_stock_info, get_stock_history
-from analyzer import calculate_moving_average, get_summary
-from ai_analyzer import analyze_stock
-
-app = FastAPI(title="股票資料 API", version="1.0.0")
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-
-# ── 首頁 ──────────────────────────────────────
-@app.get("/")
-def root():
-    return {"message": "股票 API 運作中 🚀"}
-
-
-# ── 主要端點：基本資訊 + 統計 + K線 ──────────
-@app.get("/stock/{symbol}")
-def get_stock(symbol: str, period: str = "3mo"):
-    try:
-        info = get_stock_info(symbol)
-        df = get_stock_history(symbol, period)
-
-        if df.empty:
-            raise HTTPException(status_code=404, detail=f"找不到股票：{symbol}")
-
-        df = calculate_moving_average(df)
-        summary = get_summary(df)
-
-        # Alpha Vantage 額度用完時，用 yfinance 資料補股價
-        if info["目前股價"] == "N/A" or info["目前股價"] == 0:
-            info["目前股價"] = float(df["Close"].iloc[-1])
-            info["52週最高"] = float(df["High"].max())
-            info["52週最低"] = float(df["Low"].min())
-
-        # 整理近 60 筆 K 線
-        history = []
-        for date, row in df[["Open", "High", "Low", "Close", "Volume", "MA5", "MA20"]].tail(60).iterrows():
-            history.append({
-                "日期": str(date.date()),
-                "開盤": row["Open"],
-                "最高": row["High"],
-                "最低": row["Low"],
-                "收盤": row["Close"],
-                "成交量": int(row["Volume"]),
-                "MA5": None if str(row["MA5"]) == "nan" else row["MA5"],
-                "MA20": None if str(row["MA20"]) == "nan" else row["MA20"],
-            })
-
-        return {
-            "基本資訊": info,
-            "統計摘要": summary,
-            "歷史資料": history,
-        }
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-# ── AI 分析 ───────────────────────────────────
-@app.get("/stock/{symbol}/ai")
-def get_ai_analysis(symbol: str, period: str = "3mo"):
-    try:
-        info = get_stock_info(symbol)
-        df = get_stock_history(symbol, period)
-
-        if df.empty:
-            raise HTTPException(status_code=404, detail=f"找不到股票：{symbol}")
-
-        df = calculate_moving_average(df)
-        summary = get_summary(df)
-        analysis = analyze_stock(info, summary)
-
-        return {"股票代號": symbol, "AI分析": analysis}
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-# ── 環境變數確認 ──────────────────────────────
-@app.get("/debug")
-def debug():
-    import os
-    def mask(key): 
-        val = os.environ.get(key, "❌ 空的")
-        return val[:8] + "..." if val != "❌ 空的" else val
-
-    return {
-        "ALPHA_VANTAGE_KEY": mask("ALPHA_VANTAGE_KEY"),
-        "GROQ_API_KEY": mask("GROQ_API_KEY"),
-    }
-</file>
-
-<file path="crawler.py">
-# crawler.py
-
-import requests
-import yfinance as yf
-import pandas as pd
-import os
-from pathlib import Path
-from dotenv import load_dotenv
-
-load_dotenv(dotenv_path=Path(__file__).parent / ".env")
-
-ALPHA_VANTAGE_KEY = os.environ.get("ALPHA_VANTAGE_KEY", "")
-BASE_URL = "https://www.alphavantage.co/query"
-
-
-def get_stock_info(symbol: str) -> dict:
-    """基本資訊：優先 Alpha Vantage，額度用完自動改用 yfinance"""
-
-    # ── 先試 Alpha Vantage ──────────────────────
-    try:
-        res = requests.get(BASE_URL, params={
-            "function": "OVERVIEW",
-            "symbol": symbol,
-            "apikey": ALPHA_VANTAGE_KEY,
-        }, timeout=10)
-        data = res.json()
-
-        if "Symbol" in data:
-            return {
-                "股票代號": symbol,
-                "公司名稱": data.get("Name", "N/A"),
-                "目前股價": float(data.get("200DayMovingAverage") or 0),
-                "52週最高": float(data.get("52WeekHigh") or 0),
-                "52週最低": float(data.get("52WeekLow") or 0),
-                "市值": data.get("MarketCapitalization", "N/A"),
-                "本益比": data.get("PERatio", "N/A"),
-            }
-
-        print(f"⚠️ Alpha Vantage 無資料，改用 yfinance 備援")
-
-    except Exception as e:
-        print(f"⚠️ Alpha Vantage 錯誤: {e}，改用 yfinance 備援")
-
-    # ── Alpha Vantage 失敗 → yfinance 備援 ──────
-    try:
-        ticker = yf.Ticker(symbol)
-        info = ticker.info  # yfinance 的基本資訊
-
-        return {
-            "股票代號": symbol,
-            "公司名稱": info.get("longName") or info.get("shortName") or symbol,
-            "目前股價": info.get("currentPrice") or info.get("regularMarketPrice") or 0,
-            "52週最高": info.get("fiftyTwoWeekHigh") or 0,
-            "52週最低": info.get("fiftyTwoWeekLow") or 0,
-            "市值": str(info.get("marketCap", "N/A")),
-            "本益比": str(info.get("trailingPE", "N/A")),
-        }
-
-    except Exception as e:
-        print(f"❌ yfinance 備援也失敗: {e}")
-        return {
-            "股票代號": symbol,
-            "公司名稱": symbol,   # 最後保底：直接顯示代號
-            "目前股價": 0,
-            "52週最高": 0,
-            "52週最低": 0,
-            "市值": "N/A",
-            "本益比": "N/A",
-        }
-
-
-def get_stock_history(symbol: str, period: str = "3mo") -> pd.DataFrame:
-    try:
-        # yf.download 比 Ticker.history 在雲端更穩定
-        df = yf.download(
-            symbol,
-            period=period,
-            progress=False,   # 關掉進度條
-            auto_adjust=True  # 自動調整除權息
-        )
-
-        if df.empty:
-            print(f"⚠️ yfinance 回傳空資料: {symbol}")
-            return pd.DataFrame()
-
-        # yf.download 回傳多層欄位，需要壓平
-        if isinstance(df.columns, pd.MultiIndex):
-            df.columns = df.columns.get_level_values(0)
-
-        df.index = pd.to_datetime(df.index).tz_localize(None)
-        return df.round(2)
-
-    except Exception as e:
-        print(f"❌ get_stock_history 錯誤: {e}")
-        return pd.DataFrame()
-</file>
-
-<file path="Dockerfile">
+<file path="stock-crawler/Dockerfile">
 FROM python:3.14-slim
 
 WORKDIR /app
@@ -413,22 +138,7 @@ EXPOSE 8000
 CMD ["uvicorn", "api:app", "--host", "0.0.0.0", "--port", "8000"]
 </file>
 
-<file path="Dockerfile">
-FROM python:3.14-slim
-
-WORKDIR /app
-
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-
-COPY . .
-
-EXPOSE 8000
-
-CMD ["uvicorn", "api:app", "--host", "0.0.0.0", "--port", "8000"]
-</file>
-
-<file path="main.py">
+<file path="stock-crawler/main.py">
 from tabulate import tabulate
 from crawler import get_stock_info, get_stock_history, save_to_csv
 from analyzer import calculate_moving_average, get_summary
@@ -492,69 +202,40 @@ if __name__ == "__main__":
     main()
 </file>
 
-<file path="requirements.txt">
-annotated-doc==0.0.4
-annotated-types==0.7.0
-anyio==4.13.0
-beautifulsoup4==4.14.3
-certifi==2026.2.25
-cffi==2.0.0
-charset-normalizer==3.4.7
-click==8.3.3
-colorama==0.4.6
-curl_cffi==0.15.0
-distro==1.9.0
-fastapi==0.136.1
-frozendict==2.4.7
-groq==1.2.0
-h11==0.16.0
-httpcore==1.0.9
-httpx==0.28.1
-idna==3.11
-markdown-it-py==4.0.0
-mdurl==0.1.2
-multitasking==0.0.12
-numpy==2.4.4
-pandas==3.0.2
-peewee==4.0.4
-platformdirs==4.9.6
-protobuf==7.34.1
-pycparser==3.0
-pydantic==2.13.3
-pydantic_core==2.46.3
-Pygments==2.20.0
-python-dateutil==2.9.0.post0
-python-dotenv==1.2.2
-pytz==2026.1.post1
-requests==2.33.1
-rich==15.0.0
-six==1.17.0
-sniffio==1.3.1
-soupsieve==2.8.3
-starlette==1.0.0
-tabulate==0.10.0
-typing-inspection==0.4.2
-typing_extensions==4.15.0
-tzdata==2026.1
-urllib3==2.6.3
-uvicorn==0.46.0
-websockets==16.0
-yfinance==1.3.0
+<file path="stock-frontend/.gitignore">
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
 </file>
 
-<file path=".repomixignore">
+<file path="stock-frontend/.repomixignore">
 node_modules/
 dist/
 .env
 </file>
 
-<file path=".repomixignore">
-node_modules/
-dist/
-.env
-</file>
-
-<file path="Dockerfile">
+<file path="stock-frontend/Dockerfile">
 FROM node:20-slim
 
 WORKDIR /app
@@ -569,22 +250,7 @@ EXPOSE 5173
 CMD ["npm", "run", "dev", "--", "--host"]
 </file>
 
-<file path="Dockerfile">
-FROM node:20-slim
-
-WORKDIR /app
-
-COPY package*.json .
-RUN npm install
-
-COPY . .
-
-EXPOSE 5173
-
-CMD ["npm", "run", "dev", "--", "--host"]
-</file>
-
-<file path="eslint.config.js">
+<file path="stock-frontend/eslint.config.js">
 import js from '@eslint/js'
 import globals from 'globals'
 import reactHooks from 'eslint-plugin-react-hooks'
@@ -608,7 +274,7 @@ export default defineConfig([
 ])
 </file>
 
-<file path="index.html">
+<file path="stock-frontend/index.html">
 <!doctype html>
 <html lang="en">
   <head>
@@ -624,7 +290,7 @@ export default defineConfig([
 </html>
 </file>
 
-<file path="package.json">
+<file path="stock-frontend/package.json">
 {
   "name": "stock-frontend",
   "private": true,
@@ -655,11 +321,11 @@ export default defineConfig([
 }
 </file>
 
-<file path="public/favicon.svg">
+<file path="stock-frontend/public/favicon.svg">
 <svg xmlns="http://www.w3.org/2000/svg" width="48" height="46" fill="none" viewBox="0 0 48 46"><path fill="#863bff" d="M25.946 44.938c-.664.845-2.021.375-2.021-.698V33.937a2.26 2.26 0 0 0-2.262-2.262H10.287c-.92 0-1.456-1.04-.92-1.788l7.48-10.471c1.07-1.497 0-3.578-1.842-3.578H1.237c-.92 0-1.456-1.04-.92-1.788L10.013.474c.214-.297.556-.474.92-.474h28.894c.92 0 1.456 1.04.92 1.788l-7.48 10.471c-1.07 1.498 0 3.579 1.842 3.579h11.377c.943 0 1.473 1.088.89 1.83L25.947 44.94z" style="fill:#863bff;fill:color(display-p3 .5252 .23 1);fill-opacity:1"/><mask id="a" width="48" height="46" x="0" y="0" maskUnits="userSpaceOnUse" style="mask-type:alpha"><path fill="#000" d="M25.842 44.938c-.664.844-2.021.375-2.021-.698V33.937a2.26 2.26 0 0 0-2.262-2.262H10.183c-.92 0-1.456-1.04-.92-1.788l7.48-10.471c1.07-1.498 0-3.579-1.842-3.579H1.133c-.92 0-1.456-1.04-.92-1.787L9.91.473c.214-.297.556-.474.92-.474h28.894c.92 0 1.456 1.04.92 1.788l-7.48 10.471c-1.07 1.498 0 3.578 1.842 3.578h11.377c.943 0 1.473 1.088.89 1.832L25.843 44.94z" style="fill:#000;fill-opacity:1"/></mask><g mask="url(#a)"><g filter="url(#b)"><ellipse cx="5.508" cy="14.704" fill="#ede6ff" rx="5.508" ry="14.704" style="fill:#ede6ff;fill:color(display-p3 .9275 .9033 1);fill-opacity:1" transform="matrix(.00324 1 1 -.00324 -4.47 31.516)"/></g><g filter="url(#c)"><ellipse cx="10.399" cy="29.851" fill="#ede6ff" rx="10.399" ry="29.851" style="fill:#ede6ff;fill:color(display-p3 .9275 .9033 1);fill-opacity:1" transform="matrix(.00324 1 1 -.00324 -39.328 7.883)"/></g><g filter="url(#d)"><ellipse cx="5.508" cy="30.487" fill="#7e14ff" rx="5.508" ry="30.487" style="fill:#7e14ff;fill:color(display-p3 .4922 .0767 1);fill-opacity:1" transform="rotate(89.814 -25.913 -14.639)scale(1 -1)"/></g><g filter="url(#e)"><ellipse cx="5.508" cy="30.599" fill="#7e14ff" rx="5.508" ry="30.599" style="fill:#7e14ff;fill:color(display-p3 .4922 .0767 1);fill-opacity:1" transform="rotate(89.814 -32.644 -3.334)scale(1 -1)"/></g><g filter="url(#f)"><ellipse cx="5.508" cy="30.599" fill="#7e14ff" rx="5.508" ry="30.599" style="fill:#7e14ff;fill:color(display-p3 .4922 .0767 1);fill-opacity:1" transform="matrix(.00324 1 1 -.00324 -34.34 30.47)"/></g><g filter="url(#g)"><ellipse cx="14.072" cy="22.078" fill="#ede6ff" rx="14.072" ry="22.078" style="fill:#ede6ff;fill:color(display-p3 .9275 .9033 1);fill-opacity:1" transform="rotate(93.35 24.506 48.493)scale(-1 1)"/></g><g filter="url(#h)"><ellipse cx="3.47" cy="21.501" fill="#7e14ff" rx="3.47" ry="21.501" style="fill:#7e14ff;fill:color(display-p3 .4922 .0767 1);fill-opacity:1" transform="rotate(89.009 28.708 47.59)scale(-1 1)"/></g><g filter="url(#i)"><ellipse cx="3.47" cy="21.501" fill="#7e14ff" rx="3.47" ry="21.501" style="fill:#7e14ff;fill:color(display-p3 .4922 .0767 1);fill-opacity:1" transform="rotate(89.009 28.708 47.59)scale(-1 1)"/></g><g filter="url(#j)"><ellipse cx=".387" cy="8.972" fill="#7e14ff" rx="4.407" ry="29.108" style="fill:#7e14ff;fill:color(display-p3 .4922 .0767 1);fill-opacity:1" transform="rotate(39.51 .387 8.972)"/></g><g filter="url(#k)"><ellipse cx="47.523" cy="-6.092" fill="#7e14ff" rx="4.407" ry="29.108" style="fill:#7e14ff;fill:color(display-p3 .4922 .0767 1);fill-opacity:1" transform="rotate(37.892 47.523 -6.092)"/></g><g filter="url(#l)"><ellipse cx="41.412" cy="6.333" fill="#47bfff" rx="5.971" ry="9.665" style="fill:#47bfff;fill:color(display-p3 .2799 .748 1);fill-opacity:1" transform="rotate(37.892 41.412 6.333)"/></g><g filter="url(#m)"><ellipse cx="-1.879" cy="38.332" fill="#7e14ff" rx="4.407" ry="29.108" style="fill:#7e14ff;fill:color(display-p3 .4922 .0767 1);fill-opacity:1" transform="rotate(37.892 -1.88 38.332)"/></g><g filter="url(#n)"><ellipse cx="-1.879" cy="38.332" fill="#7e14ff" rx="4.407" ry="29.108" style="fill:#7e14ff;fill:color(display-p3 .4922 .0767 1);fill-opacity:1" transform="rotate(37.892 -1.88 38.332)"/></g><g filter="url(#o)"><ellipse cx="35.651" cy="29.907" fill="#7e14ff" rx="4.407" ry="29.108" style="fill:#7e14ff;fill:color(display-p3 .4922 .0767 1);fill-opacity:1" transform="rotate(37.892 35.651 29.907)"/></g><g filter="url(#p)"><ellipse cx="38.418" cy="32.4" fill="#47bfff" rx="5.971" ry="15.297" style="fill:#47bfff;fill:color(display-p3 .2799 .748 1);fill-opacity:1" transform="rotate(37.892 38.418 32.4)"/></g></g><defs><filter id="b" width="60.045" height="41.654" x="-19.77" y="16.149" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="7.659"/></filter><filter id="c" width="90.34" height="51.437" x="-54.613" y="-7.533" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="7.659"/></filter><filter id="d" width="79.355" height="29.4" x="-49.64" y="2.03" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="4.596"/></filter><filter id="e" width="79.579" height="29.4" x="-45.045" y="20.029" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="4.596"/></filter><filter id="f" width="79.579" height="29.4" x="-43.513" y="21.178" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="4.596"/></filter><filter id="g" width="74.749" height="58.852" x="15.756" y="-17.901" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="7.659"/></filter><filter id="h" width="61.377" height="25.362" x="23.548" y="2.284" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="4.596"/></filter><filter id="i" width="61.377" height="25.362" x="23.548" y="2.284" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="4.596"/></filter><filter id="j" width="56.045" height="63.649" x="-27.636" y="-22.853" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="4.596"/></filter><filter id="k" width="54.814" height="64.646" x="20.116" y="-38.415" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="4.596"/></filter><filter id="l" width="33.541" height="35.313" x="24.641" y="-11.323" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="4.596"/></filter><filter id="m" width="54.814" height="64.646" x="-29.286" y="6.009" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="4.596"/></filter><filter id="n" width="54.814" height="64.646" x="-29.286" y="6.009" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="4.596"/></filter><filter id="o" width="54.814" height="64.646" x="8.244" y="-2.416" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="4.596"/></filter><filter id="p" width="39.409" height="43.623" x="18.713" y="10.588" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="4.596"/></filter></defs></svg>
 </file>
 
-<file path="public/icons.svg">
+<file path="stock-frontend/public/icons.svg">
 <svg xmlns="http://www.w3.org/2000/svg">
   <symbol id="bluesky-icon" viewBox="0 0 16 17">
     <g clip-path="url(#bluesky-clip)"><path fill="#08060d" d="M7.75 7.735c-.693-1.348-2.58-3.86-4.334-5.097-1.68-1.187-2.32-.981-2.74-.79C.188 2.065.1 2.812.1 3.251s.241 3.602.398 4.13c.52 1.744 2.367 2.333 4.07 2.145-2.495.37-4.71 1.278-1.805 4.512 3.196 3.309 4.38-.71 4.987-2.746.608 2.036 1.307 5.91 4.93 2.746 2.72-2.746.747-4.143-1.747-4.512 1.702.189 3.55-.4 4.07-2.145.156-.528.397-3.691.397-4.13s-.088-1.186-.575-1.406c-.42-.19-1.06-.395-2.741.79-1.755 1.24-3.64 3.752-4.334 5.099"/></g>
@@ -686,7 +352,7 @@ export default defineConfig([
 </svg>
 </file>
 
-<file path="README.md">
+<file path="stock-frontend/README.md">
 # React + Vite
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
@@ -705,7 +371,337 @@ The React Compiler is not enabled on this template because of its impact on dev 
 If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
 </file>
 
-<file path="src/App.css">
+<file path="stock-frontend/src/assets/react.svg">
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" aria-hidden="true" role="img" class="iconify iconify--logos" width="35.93" height="32" preserveAspectRatio="xMidYMid meet" viewBox="0 0 256 228"><path fill="#00D8FF" d="M210.483 73.824a171.49 171.49 0 0 0-8.24-2.597c.465-1.9.893-3.777 1.273-5.621c6.238-30.281 2.16-54.676-11.769-62.708c-13.355-7.7-35.196.329-57.254 19.526a171.23 171.23 0 0 0-6.375 5.848a155.866 155.866 0 0 0-4.241-3.917C100.759 3.829 77.587-4.822 63.673 3.233C50.33 10.957 46.379 33.89 51.995 62.588a170.974 170.974 0 0 0 1.892 8.48c-3.28.932-6.445 1.924-9.474 2.98C17.309 83.498 0 98.307 0 113.668c0 15.865 18.582 31.778 46.812 41.427a145.52 145.52 0 0 0 6.921 2.165a167.467 167.467 0 0 0-2.01 9.138c-5.354 28.2-1.173 50.591 12.134 58.266c13.744 7.926 36.812-.22 59.273-19.855a145.567 145.567 0 0 0 5.342-4.923a168.064 168.064 0 0 0 6.92 6.314c21.758 18.722 43.246 26.282 56.54 18.586c13.731-7.949 18.194-32.003 12.4-61.268a145.016 145.016 0 0 0-1.535-6.842c1.62-.48 3.21-.974 4.76-1.488c29.348-9.723 48.443-25.443 48.443-41.52c0-15.417-17.868-30.326-45.517-39.844Zm-6.365 70.984c-1.4.463-2.836.91-4.3 1.345c-3.24-10.257-7.612-21.163-12.963-32.432c5.106-11 9.31-21.767 12.459-31.957c2.619.758 5.16 1.557 7.61 2.4c23.69 8.156 38.14 20.213 38.14 29.504c0 9.896-15.606 22.743-40.946 31.14Zm-10.514 20.834c2.562 12.94 2.927 24.64 1.23 33.787c-1.524 8.219-4.59 13.698-8.382 15.893c-8.067 4.67-25.32-1.4-43.927-17.412a156.726 156.726 0 0 1-6.437-5.87c7.214-7.889 14.423-17.06 21.459-27.246c12.376-1.098 24.068-2.894 34.671-5.345a134.17 134.17 0 0 1 1.386 6.193ZM87.276 214.515c-7.882 2.783-14.16 2.863-17.955.675c-8.075-4.657-11.432-22.636-6.853-46.752a156.923 156.923 0 0 1 1.869-8.499c10.486 2.32 22.093 3.988 34.498 4.994c7.084 9.967 14.501 19.128 21.976 27.15a134.668 134.668 0 0 1-4.877 4.492c-9.933 8.682-19.886 14.842-28.658 17.94ZM50.35 144.747c-12.483-4.267-22.792-9.812-29.858-15.863c-6.35-5.437-9.555-10.836-9.555-15.216c0-9.322 13.897-21.212 37.076-29.293c2.813-.98 5.757-1.905 8.812-2.773c3.204 10.42 7.406 21.315 12.477 32.332c-5.137 11.18-9.399 22.249-12.634 32.792a134.718 134.718 0 0 1-6.318-1.979Zm12.378-84.26c-4.811-24.587-1.616-43.134 6.425-47.789c8.564-4.958 27.502 2.111 47.463 19.835a144.318 144.318 0 0 1 3.841 3.545c-7.438 7.987-14.787 17.08-21.808 26.988c-12.04 1.116-23.565 2.908-34.161 5.309a160.342 160.342 0 0 1-1.76-7.887Zm110.427 27.268a347.8 347.8 0 0 0-7.785-12.803c8.168 1.033 15.994 2.404 23.343 4.08c-2.206 7.072-4.956 14.465-8.193 22.045a381.151 381.151 0 0 0-7.365-13.322Zm-45.032-43.861c5.044 5.465 10.096 11.566 15.065 18.186a322.04 322.04 0 0 0-30.257-.006c4.974-6.559 10.069-12.652 15.192-18.18ZM82.802 87.83a323.167 323.167 0 0 0-7.227 13.238c-3.184-7.553-5.909-14.98-8.134-22.152c7.304-1.634 15.093-2.97 23.209-3.984a321.524 321.524 0 0 0-7.848 12.897Zm8.081 65.352c-8.385-.936-16.291-2.203-23.593-3.793c2.26-7.3 5.045-14.885 8.298-22.6a321.187 321.187 0 0 0 7.257 13.246c2.594 4.48 5.28 8.868 8.038 13.147Zm37.542 31.03c-5.184-5.592-10.354-11.779-15.403-18.433c4.902.192 9.899.29 14.978.29c5.218 0 10.376-.117 15.453-.343c-4.985 6.774-10.018 12.97-15.028 18.486Zm52.198-57.817c3.422 7.8 6.306 15.345 8.596 22.52c-7.422 1.694-15.436 3.058-23.88 4.071a382.417 382.417 0 0 0 7.859-13.026a347.403 347.403 0 0 0 7.425-13.565Zm-16.898 8.101a358.557 358.557 0 0 1-12.281 19.815a329.4 329.4 0 0 1-23.444.823c-7.967 0-15.716-.248-23.178-.732a310.202 310.202 0 0 1-12.513-19.846h.001a307.41 307.41 0 0 1-10.923-20.627a310.278 310.278 0 0 1 10.89-20.637l-.001.001a307.318 307.318 0 0 1 12.413-19.761c7.613-.576 15.42-.876 23.31-.876H128c7.926 0 15.743.303 23.354.883a329.357 329.357 0 0 1 12.335 19.695a358.489 358.489 0 0 1 11.036 20.54a329.472 329.472 0 0 1-11 20.722Zm22.56-122.124c8.572 4.944 11.906 24.881 6.52 51.026c-.344 1.668-.73 3.367-1.15 5.09c-10.622-2.452-22.155-4.275-34.23-5.408c-7.034-10.017-14.323-19.124-21.64-27.008a160.789 160.789 0 0 1 5.888-5.4c18.9-16.447 36.564-22.941 44.612-18.3ZM128 90.808c12.625 0 22.86 10.235 22.86 22.86s-10.235 22.86-22.86 22.86s-22.86-10.235-22.86-22.86s10.235-22.86 22.86-22.86Z"></path></svg>
+</file>
+
+<file path="stock-frontend/src/assets/vite.svg">
+<svg xmlns="http://www.w3.org/2000/svg" width="77" height="47" fill="none" aria-labelledby="vite-logo-title" viewBox="0 0 77 47"><title id="vite-logo-title">Vite</title><style>.parenthesis{fill:#000}@media (prefers-color-scheme:dark){.parenthesis{fill:#fff}}</style><path fill="#9135ff" d="M40.151 45.71c-.663.844-2.02.374-2.02-.699V34.708a2.26 2.26 0 0 0-2.262-2.262H24.493c-.92 0-1.457-1.04-.92-1.788l7.479-10.471c1.07-1.498 0-3.578-1.842-3.578H15.443c-.92 0-1.456-1.04-.92-1.788l9.696-13.576c.213-.297.556-.474.92-.474h28.894c.92 0 1.456 1.04.92 1.788l-7.48 10.472c-1.07 1.497 0 3.578 1.842 3.578h11.376c.944 0 1.474 1.087.89 1.83L40.153 45.712z"/><mask id="a" width="48" height="47" x="14" y="0" maskUnits="userSpaceOnUse" style="mask-type:alpha"><path fill="#000" d="M40.047 45.71c-.663.843-2.02.374-2.02-.699V34.708a2.26 2.26 0 0 0-2.262-2.262H24.389c-.92 0-1.457-1.04-.92-1.788l7.479-10.472c1.07-1.497 0-3.578-1.842-3.578H15.34c-.92 0-1.456-1.04-.92-1.788l9.696-13.575c.213-.297.556-.474.92-.474H53.93c.92 0 1.456 1.04.92 1.788L47.37 13.03c-1.07 1.498 0 3.578 1.842 3.578h11.376c.944 0 1.474 1.088.89 1.831L40.049 45.712z"/></mask><g mask="url(#a)"><g filter="url(#b)"><ellipse cx="5.508" cy="14.704" fill="#eee6ff" rx="5.508" ry="14.704" transform="rotate(269.814 20.96 11.29)scale(-1 1)"/></g><g filter="url(#c)"><ellipse cx="10.399" cy="29.851" fill="#eee6ff" rx="10.399" ry="29.851" transform="rotate(89.814 -16.902 -8.275)scale(1 -1)"/></g><g filter="url(#d)"><ellipse cx="5.508" cy="30.487" fill="#8900ff" rx="5.508" ry="30.487" transform="rotate(89.814 -19.197 -7.127)scale(1 -1)"/></g><g filter="url(#e)"><ellipse cx="5.508" cy="30.599" fill="#8900ff" rx="5.508" ry="30.599" transform="rotate(89.814 -25.928 4.177)scale(1 -1)"/></g><g filter="url(#f)"><ellipse cx="5.508" cy="30.599" fill="#8900ff" rx="5.508" ry="30.599" transform="rotate(89.814 -25.738 5.52)scale(1 -1)"/></g><g filter="url(#g)"><ellipse cx="14.072" cy="22.078" fill="#eee6ff" rx="14.072" ry="22.078" transform="rotate(93.35 31.245 55.578)scale(-1 1)"/></g><g filter="url(#h)"><ellipse cx="3.47" cy="21.501" fill="#8900ff" rx="3.47" ry="21.501" transform="rotate(89.009 35.419 55.202)scale(-1 1)"/></g><g filter="url(#i)"><ellipse cx="3.47" cy="21.501" fill="#8900ff" rx="3.47" ry="21.501" transform="rotate(89.009 35.419 55.202)scale(-1 1)"/></g><g filter="url(#j)"><ellipse cx="14.592" cy="9.743" fill="#8900ff" rx="4.407" ry="29.108" transform="rotate(39.51 14.592 9.743)"/></g><g filter="url(#k)"><ellipse cx="61.728" cy="-5.321" fill="#8900ff" rx="4.407" ry="29.108" transform="rotate(37.892 61.728 -5.32)"/></g><g filter="url(#l)"><ellipse cx="55.618" cy="7.104" fill="#00c2ff" rx="5.971" ry="9.665" transform="rotate(37.892 55.618 7.104)"/></g><g filter="url(#m)"><ellipse cx="12.326" cy="39.103" fill="#8900ff" rx="4.407" ry="29.108" transform="rotate(37.892 12.326 39.103)"/></g><g filter="url(#n)"><ellipse cx="12.326" cy="39.103" fill="#8900ff" rx="4.407" ry="29.108" transform="rotate(37.892 12.326 39.103)"/></g><g filter="url(#o)"><ellipse cx="49.857" cy="30.678" fill="#8900ff" rx="4.407" ry="29.108" transform="rotate(37.892 49.857 30.678)"/></g><g filter="url(#p)"><ellipse cx="52.623" cy="33.171" fill="#00c2ff" rx="5.971" ry="15.297" transform="rotate(37.892 52.623 33.17)"/></g></g><path d="M6.919 0c-9.198 13.166-9.252 33.575 0 46.789h6.215c-9.25-13.214-9.196-33.623 0-46.789zm62.424 0h-6.215c9.198 13.166 9.252 33.575 0 46.789h6.215c9.25-13.214 9.196-33.623 0-46.789" class="parenthesis"/><defs><filter id="b" width="60.045" height="41.654" x="-5.564" y="16.92" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="7.659"/></filter><filter id="c" width="90.34" height="51.437" x="-40.407" y="-6.762" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="7.659"/></filter><filter id="d" width="79.355" height="29.4" x="-35.435" y="2.801" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="4.596"/></filter><filter id="e" width="79.579" height="29.4" x="-30.84" y="20.8" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="4.596"/></filter><filter id="f" width="79.579" height="29.4" x="-29.307" y="21.949" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="4.596"/></filter><filter id="g" width="74.749" height="58.852" x="29.961" y="-17.13" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="7.659"/></filter><filter id="h" width="61.377" height="25.362" x="37.754" y="3.055" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="4.596"/></filter><filter id="i" width="61.377" height="25.362" x="37.754" y="3.055" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="4.596"/></filter><filter id="j" width="56.045" height="63.649" x="-13.43" y="-22.082" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="4.596"/></filter><filter id="k" width="54.814" height="64.646" x="34.321" y="-37.644" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="4.596"/></filter><filter id="l" width="33.541" height="35.313" x="38.847" y="-10.552" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="4.596"/></filter><filter id="m" width="54.814" height="64.646" x="-15.081" y="6.78" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="4.596"/></filter><filter id="n" width="54.814" height="64.646" x="-15.081" y="6.78" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="4.596"/></filter><filter id="o" width="54.814" height="64.646" x="22.45" y="-1.645" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="4.596"/></filter><filter id="p" width="39.409" height="43.623" x="32.919" y="11.36" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="4.596"/></filter></defs></svg>
+</file>
+
+<file path="stock-frontend/src/components/StockCard.jsx">
+function StockCard({ info, summary }) {
+    return (
+        <div className="card">
+            <div className="card-header">
+                <div>
+                    <h2>{info.公司名稱}</h2>
+                    <span className="symbol">{info.股票代號}</span>
+                </div>
+                <div className="price">${info.目前股價}</div>
+            </div>
+
+            {/* 基本指標 */}
+            <div className="metrics">
+                <div className="metric">
+                    <span className="label">52週最高</span>
+                    <span className="value">${info["52週最高"]}</span>
+                </div>
+                <div className="metric">
+                    <span className="label">52週最低</span>
+                    <span className="value">${info["52週最低"]}</span>
+                </div>
+                <div className="metric">
+                    <span className="label">本益比</span>
+                    <span className="value">
+                        {info.本益比 !== "N/A" ? Number(info.本益比).toFixed(2) : "N/A"}
+                    </span>
+                </div>
+                <div className="metric">
+                    <span className="label">期間漲跌</span>
+                    <span className={`value ${summary.期間漲跌幅.startsWith("+") ? "up" : "down"}`}>
+                        {summary.期間漲跌幅}
+                    </span>
+                </div>
+            </div>
+
+            {/* 統計摘要 */}
+            <div className="summary">
+                <div className="summary-row">
+                    <span>分析期間</span>
+                    <span>{summary.分析期間}</span>
+                </div>
+                <div className="summary-row">
+                    <span>起始收盤價</span>
+                    <span>${summary.起始收盤價}</span>
+                </div>
+                <div className="summary-row">
+                    <span>最新收盤價</span>
+                    <span>${summary.最新收盤價}</span>
+                </div>
+                <div className="summary-row">
+                    <span>期間最高價</span>
+                    <span>${summary.期間最高價}</span>
+                </div>
+                <div className="summary-row">
+                    <span>期間最低價</span>
+                    <span>${summary.期間最低價}</span>
+                </div>
+                <div className="summary-row">
+                    <span>平均成交量</span>
+                    <span>{summary.平均成交量}</span>
+                </div>
+            </div>
+        </div>
+    )
+}
+
+export default StockCard
+</file>
+
+<file path="stock-frontend/src/components/StockChart.jsx">
+import {
+    LineChart, Line, XAxis, YAxis,
+    CartesianGrid, Tooltip, Legend, ResponsiveContainer
+} from "recharts"
+
+function StockChart({ data }) {
+    if (!data || data.length === 0) return null
+
+    return (
+        <div className="card">
+            <h3>股價走勢圖</h3>
+            <ResponsiveContainer width="100%" height={300}>
+                <LineChart data={data}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#333" />
+                    <XAxis
+                        dataKey="日期"
+                        tick={{ fontSize: 11 }}
+                        tickFormatter={val => val.slice(5)}  // 只顯示 月-日
+                    />
+                    <YAxis
+                        domain={["auto", "auto"]}
+                        tick={{ fontSize: 11 }}
+                        tickFormatter={val => `$${val}`}
+                    />
+                    <Tooltip
+                        formatter={(value) => [`$${value}`, ""]}
+                        labelFormatter={(label) => `日期：${label}`}
+                    />
+                    <Legend />
+                    <Line type="monotone" dataKey="收盤" stroke="#4f9cf9" dot={false} strokeWidth={2} />
+                    <Line type="monotone" dataKey="MA5" stroke="#f9a84f" dot={false} strokeWidth={1.5} strokeDasharray="4 2" />
+                    <Line type="monotone" dataKey="MA20" stroke="#4ff9a8" dot={false} strokeWidth={1.5} strokeDasharray="4 2" />
+                </LineChart>
+            </ResponsiveContainer>
+        </div>
+    )
+}
+
+export default StockChart
+</file>
+
+<file path="stock-frontend/src/index.css">
+:root {
+  --text: #6b6375;
+  --text-h: #08060d;
+  --bg: #fff;
+  --border: #e5e4e7;
+  --code-bg: #f4f3ec;
+  --accent: #aa3bff;
+  --accent-bg: rgba(170, 59, 255, 0.1);
+  --accent-border: rgba(170, 59, 255, 0.5);
+  --social-bg: rgba(244, 243, 236, 0.5);
+  --shadow:
+    rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
+
+  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
+  --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
+  --mono: ui-monospace, Consolas, monospace;
+
+  font: 18px/145% var(--sans);
+  letter-spacing: 0.18px;
+  color-scheme: light dark;
+  color: var(--text);
+  background: var(--bg);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+
+  @media (max-width: 1024px) {
+    font-size: 16px;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --text: #9ca3af;
+    --text-h: #f3f4f6;
+    --bg: #16171d;
+    --border: #2e303a;
+    --code-bg: #1f2028;
+    --accent: #c084fc;
+    --accent-bg: rgba(192, 132, 252, 0.15);
+    --accent-border: rgba(192, 132, 252, 0.5);
+    --social-bg: rgba(47, 48, 58, 0.5);
+    --shadow:
+      rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
+  }
+
+  #social .button-icon {
+    filter: invert(1) brightness(2);
+  }
+}
+
+body {
+  margin: 0;
+}
+
+#root {
+  width: 1126px;
+  max-width: 100%;
+  margin: 0 auto;
+  text-align: center;
+  border-inline: 1px solid var(--border);
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+}
+
+h1,
+h2 {
+  font-family: var(--heading);
+  font-weight: 500;
+  color: var(--text-h);
+}
+
+h1 {
+  font-size: 56px;
+  letter-spacing: -1.68px;
+  margin: 32px 0;
+  @media (max-width: 1024px) {
+    font-size: 36px;
+    margin: 20px 0;
+  }
+}
+h2 {
+  font-size: 24px;
+  line-height: 118%;
+  letter-spacing: -0.24px;
+  margin: 0 0 8px;
+  @media (max-width: 1024px) {
+    font-size: 20px;
+  }
+}
+p {
+  margin: 0;
+}
+
+code,
+.counter {
+  font-family: var(--mono);
+  display: inline-flex;
+  border-radius: 4px;
+  color: var(--text-h);
+}
+
+code {
+  font-size: 15px;
+  line-height: 135%;
+  padding: 4px 8px;
+  background: var(--code-bg);
+}
+</file>
+
+<file path="stock-frontend/src/main.jsx">
+import { StrictMode } from 'react'
+import { createRoot } from 'react-dom/client'
+import './index.css'
+import App from './App.jsx'
+
+createRoot(document.getElementById('root')).render(
+  <StrictMode>
+    <App />
+  </StrictMode>,
+)
+</file>
+
+<file path="docker-compose.yml">
+services:
+  backend:
+    build: ./stock-crawler
+    ports:
+      - "8000:8000"
+    container_name: stock-backend
+    environment:
+      - GROQ_API_KEY=${GROQ_API_KEY}   # ← 加這行
+
+  frontend:
+    build: ./stock-frontend
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+    container_name: stock-frontend
+    environment:
+      - VITE_BACKEND_URL=http://backend:8000   # ← 加這行
+</file>
+
+<file path="stock-crawler/ai_analyzer.py">
+# ai_analyzer.py
+
+import os
+from groq import Groq
+from dotenv import load_dotenv
+
+load_dotenv()
+
+client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
+
+
+def analyze_stock(info: dict, summary: dict) -> str:
+    """
+    把股票資料傳給 AI，請它分析並給出建議
+    """
+
+    prompt = f"""
+以下是一支股票的近期資料：
+
+公司：{info.get('公司名稱')}（{info.get('股票代號')}）
+目前股價：{info.get('目前股價')}
+52週區間：{info.get('52週最低')} ~ {info.get('52週最高')}
+本益比：{info.get('本益比')}
+分析期間：{summary.get('分析期間')}
+期間漲跌：{summary.get('起始收盤價')} → {summary.get('最新收盤價')}（{summary.get('期間漲跌幅')}）
+期間高低：{summary.get('期間最高價')} / {summary.get('期間最低價')}
+平均成交量：{summary.get('平均成交量')}
+
+請給出你的分析，用自然的口吻說明：
+- 這支股票目前處於什麼狀況
+- 這段期間的走勢說明了什麼
+- 有什麼值得注意的地方
+- 你的整體看法
+
+風格要像一個朋友在幫你看股票，直接、有觀點、不廢話。
+最後加一行免責聲明即可。
+"""
+
+    response = client.chat.completions.create(
+        model="llama-3.3-70b-versatile",
+        messages=[
+            {
+                "role": "system",
+                "content": (
+                    "你是一個有點毒舌但很準的股票老手，"
+                    "用繁體中文說話，講重點不廢話，"
+                    "敢說漲也敢說跌，不給模糊答案。"
+                )
+            },
+            {
+                "role": "user",
+                "content": prompt
+            }
+        ],
+        temperature=0.85,
+        max_tokens=1024,
+    )
+
+    return response.choices[0].message.content
+</file>
+
+<file path="stock-frontend/src/App.css">
 * {
   box-sizing: border-box;
   margin: 0;
@@ -910,7 +906,76 @@ h3 {
 }
 </file>
 
-<file path="src/App.jsx">
+<file path="stock-crawler/requirements.txt">
+annotated-doc==0.0.4
+annotated-types==0.7.0
+anyio==4.13.0
+beautifulsoup4==4.14.3
+certifi==2026.2.25
+cffi==2.0.0
+charset-normalizer==3.4.7
+click==8.3.3
+colorama==0.4.6
+curl_cffi==0.15.0
+distro==1.9.0
+fastapi==0.136.1
+frozendict==2.4.7
+groq==1.2.0
+h11==0.16.0
+httpcore==1.0.9
+httpx==0.28.1
+idna==3.11
+markdown-it-py==4.0.0
+mdurl==0.1.2
+multitasking==0.0.12
+numpy==2.4.4
+pandas==3.0.2
+peewee==4.0.4
+platformdirs==4.9.6
+protobuf==7.34.1
+pycparser==3.0
+pydantic==2.13.3
+pydantic_core==2.46.3
+Pygments==2.20.0
+python-dateutil==2.9.0.post0
+python-dotenv==1.2.2
+pytz==2026.1.post1
+requests==2.33.1
+rich==15.0.0
+six==1.17.0
+sniffio==1.3.1
+soupsieve==2.8.3
+starlette==1.0.0
+tabulate==0.10.0
+typing-inspection==0.4.2
+typing_extensions==4.15.0
+tzdata==2026.1
+urllib3==2.6.3
+uvicorn==0.46.0
+websockets==16.0
+yfinance==1.3.0
+</file>
+
+<file path="stock-frontend/vite.config.js">
+import { defineConfig } from 'vite'
+import { default as react } from '@vitejs/plugin-react'
+
+const backendUrl = process.env.VITE_BACKEND_URL || 'http://127.0.0.1:8000'
+
+export default defineConfig({
+  plugins: [react()],
+  server: {
+    proxy: {
+      '/stock': backendUrl,
+    }
+  },
+  build: {
+    outDir: 'dist',
+  }
+})
+</file>
+
+<file path="stock-frontend/src/App.jsx">
 import { useState } from "react"
 import StockCard from "./components/StockCard"
 import StockChart from "./components/StockChart"
@@ -1047,297 +1112,208 @@ function App() {
 export default App
 </file>
 
-<file path="src/assets/react.svg">
-<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" aria-hidden="true" role="img" class="iconify iconify--logos" width="35.93" height="32" preserveAspectRatio="xMidYMid meet" viewBox="0 0 256 228"><path fill="#00D8FF" d="M210.483 73.824a171.49 171.49 0 0 0-8.24-2.597c.465-1.9.893-3.777 1.273-5.621c6.238-30.281 2.16-54.676-11.769-62.708c-13.355-7.7-35.196.329-57.254 19.526a171.23 171.23 0 0 0-6.375 5.848a155.866 155.866 0 0 0-4.241-3.917C100.759 3.829 77.587-4.822 63.673 3.233C50.33 10.957 46.379 33.89 51.995 62.588a170.974 170.974 0 0 0 1.892 8.48c-3.28.932-6.445 1.924-9.474 2.98C17.309 83.498 0 98.307 0 113.668c0 15.865 18.582 31.778 46.812 41.427a145.52 145.52 0 0 0 6.921 2.165a167.467 167.467 0 0 0-2.01 9.138c-5.354 28.2-1.173 50.591 12.134 58.266c13.744 7.926 36.812-.22 59.273-19.855a145.567 145.567 0 0 0 5.342-4.923a168.064 168.064 0 0 0 6.92 6.314c21.758 18.722 43.246 26.282 56.54 18.586c13.731-7.949 18.194-32.003 12.4-61.268a145.016 145.016 0 0 0-1.535-6.842c1.62-.48 3.21-.974 4.76-1.488c29.348-9.723 48.443-25.443 48.443-41.52c0-15.417-17.868-30.326-45.517-39.844Zm-6.365 70.984c-1.4.463-2.836.91-4.3 1.345c-3.24-10.257-7.612-21.163-12.963-32.432c5.106-11 9.31-21.767 12.459-31.957c2.619.758 5.16 1.557 7.61 2.4c23.69 8.156 38.14 20.213 38.14 29.504c0 9.896-15.606 22.743-40.946 31.14Zm-10.514 20.834c2.562 12.94 2.927 24.64 1.23 33.787c-1.524 8.219-4.59 13.698-8.382 15.893c-8.067 4.67-25.32-1.4-43.927-17.412a156.726 156.726 0 0 1-6.437-5.87c7.214-7.889 14.423-17.06 21.459-27.246c12.376-1.098 24.068-2.894 34.671-5.345a134.17 134.17 0 0 1 1.386 6.193ZM87.276 214.515c-7.882 2.783-14.16 2.863-17.955.675c-8.075-4.657-11.432-22.636-6.853-46.752a156.923 156.923 0 0 1 1.869-8.499c10.486 2.32 22.093 3.988 34.498 4.994c7.084 9.967 14.501 19.128 21.976 27.15a134.668 134.668 0 0 1-4.877 4.492c-9.933 8.682-19.886 14.842-28.658 17.94ZM50.35 144.747c-12.483-4.267-22.792-9.812-29.858-15.863c-6.35-5.437-9.555-10.836-9.555-15.216c0-9.322 13.897-21.212 37.076-29.293c2.813-.98 5.757-1.905 8.812-2.773c3.204 10.42 7.406 21.315 12.477 32.332c-5.137 11.18-9.399 22.249-12.634 32.792a134.718 134.718 0 0 1-6.318-1.979Zm12.378-84.26c-4.811-24.587-1.616-43.134 6.425-47.789c8.564-4.958 27.502 2.111 47.463 19.835a144.318 144.318 0 0 1 3.841 3.545c-7.438 7.987-14.787 17.08-21.808 26.988c-12.04 1.116-23.565 2.908-34.161 5.309a160.342 160.342 0 0 1-1.76-7.887Zm110.427 27.268a347.8 347.8 0 0 0-7.785-12.803c8.168 1.033 15.994 2.404 23.343 4.08c-2.206 7.072-4.956 14.465-8.193 22.045a381.151 381.151 0 0 0-7.365-13.322Zm-45.032-43.861c5.044 5.465 10.096 11.566 15.065 18.186a322.04 322.04 0 0 0-30.257-.006c4.974-6.559 10.069-12.652 15.192-18.18ZM82.802 87.83a323.167 323.167 0 0 0-7.227 13.238c-3.184-7.553-5.909-14.98-8.134-22.152c7.304-1.634 15.093-2.97 23.209-3.984a321.524 321.524 0 0 0-7.848 12.897Zm8.081 65.352c-8.385-.936-16.291-2.203-23.593-3.793c2.26-7.3 5.045-14.885 8.298-22.6a321.187 321.187 0 0 0 7.257 13.246c2.594 4.48 5.28 8.868 8.038 13.147Zm37.542 31.03c-5.184-5.592-10.354-11.779-15.403-18.433c4.902.192 9.899.29 14.978.29c5.218 0 10.376-.117 15.453-.343c-4.985 6.774-10.018 12.97-15.028 18.486Zm52.198-57.817c3.422 7.8 6.306 15.345 8.596 22.52c-7.422 1.694-15.436 3.058-23.88 4.071a382.417 382.417 0 0 0 7.859-13.026a347.403 347.403 0 0 0 7.425-13.565Zm-16.898 8.101a358.557 358.557 0 0 1-12.281 19.815a329.4 329.4 0 0 1-23.444.823c-7.967 0-15.716-.248-23.178-.732a310.202 310.202 0 0 1-12.513-19.846h.001a307.41 307.41 0 0 1-10.923-20.627a310.278 310.278 0 0 1 10.89-20.637l-.001.001a307.318 307.318 0 0 1 12.413-19.761c7.613-.576 15.42-.876 23.31-.876H128c7.926 0 15.743.303 23.354.883a329.357 329.357 0 0 1 12.335 19.695a358.489 358.489 0 0 1 11.036 20.54a329.472 329.472 0 0 1-11 20.722Zm22.56-122.124c8.572 4.944 11.906 24.881 6.52 51.026c-.344 1.668-.73 3.367-1.15 5.09c-10.622-2.452-22.155-4.275-34.23-5.408c-7.034-10.017-14.323-19.124-21.64-27.008a160.789 160.789 0 0 1 5.888-5.4c18.9-16.447 36.564-22.941 44.612-18.3ZM128 90.808c12.625 0 22.86 10.235 22.86 22.86s-10.235 22.86-22.86 22.86s-22.86-10.235-22.86-22.86s10.235-22.86 22.86-22.86Z"></path></svg>
-</file>
+<file path="stock-crawler/api.py">
+#api.py
 
-<file path="src/assets/vite.svg">
-<svg xmlns="http://www.w3.org/2000/svg" width="77" height="47" fill="none" aria-labelledby="vite-logo-title" viewBox="0 0 77 47"><title id="vite-logo-title">Vite</title><style>.parenthesis{fill:#000}@media (prefers-color-scheme:dark){.parenthesis{fill:#fff}}</style><path fill="#9135ff" d="M40.151 45.71c-.663.844-2.02.374-2.02-.699V34.708a2.26 2.26 0 0 0-2.262-2.262H24.493c-.92 0-1.457-1.04-.92-1.788l7.479-10.471c1.07-1.498 0-3.578-1.842-3.578H15.443c-.92 0-1.456-1.04-.92-1.788l9.696-13.576c.213-.297.556-.474.92-.474h28.894c.92 0 1.456 1.04.92 1.788l-7.48 10.472c-1.07 1.497 0 3.578 1.842 3.578h11.376c.944 0 1.474 1.087.89 1.83L40.153 45.712z"/><mask id="a" width="48" height="47" x="14" y="0" maskUnits="userSpaceOnUse" style="mask-type:alpha"><path fill="#000" d="M40.047 45.71c-.663.843-2.02.374-2.02-.699V34.708a2.26 2.26 0 0 0-2.262-2.262H24.389c-.92 0-1.457-1.04-.92-1.788l7.479-10.472c1.07-1.497 0-3.578-1.842-3.578H15.34c-.92 0-1.456-1.04-.92-1.788l9.696-13.575c.213-.297.556-.474.92-.474H53.93c.92 0 1.456 1.04.92 1.788L47.37 13.03c-1.07 1.498 0 3.578 1.842 3.578h11.376c.944 0 1.474 1.088.89 1.831L40.049 45.712z"/></mask><g mask="url(#a)"><g filter="url(#b)"><ellipse cx="5.508" cy="14.704" fill="#eee6ff" rx="5.508" ry="14.704" transform="rotate(269.814 20.96 11.29)scale(-1 1)"/></g><g filter="url(#c)"><ellipse cx="10.399" cy="29.851" fill="#eee6ff" rx="10.399" ry="29.851" transform="rotate(89.814 -16.902 -8.275)scale(1 -1)"/></g><g filter="url(#d)"><ellipse cx="5.508" cy="30.487" fill="#8900ff" rx="5.508" ry="30.487" transform="rotate(89.814 -19.197 -7.127)scale(1 -1)"/></g><g filter="url(#e)"><ellipse cx="5.508" cy="30.599" fill="#8900ff" rx="5.508" ry="30.599" transform="rotate(89.814 -25.928 4.177)scale(1 -1)"/></g><g filter="url(#f)"><ellipse cx="5.508" cy="30.599" fill="#8900ff" rx="5.508" ry="30.599" transform="rotate(89.814 -25.738 5.52)scale(1 -1)"/></g><g filter="url(#g)"><ellipse cx="14.072" cy="22.078" fill="#eee6ff" rx="14.072" ry="22.078" transform="rotate(93.35 31.245 55.578)scale(-1 1)"/></g><g filter="url(#h)"><ellipse cx="3.47" cy="21.501" fill="#8900ff" rx="3.47" ry="21.501" transform="rotate(89.009 35.419 55.202)scale(-1 1)"/></g><g filter="url(#i)"><ellipse cx="3.47" cy="21.501" fill="#8900ff" rx="3.47" ry="21.501" transform="rotate(89.009 35.419 55.202)scale(-1 1)"/></g><g filter="url(#j)"><ellipse cx="14.592" cy="9.743" fill="#8900ff" rx="4.407" ry="29.108" transform="rotate(39.51 14.592 9.743)"/></g><g filter="url(#k)"><ellipse cx="61.728" cy="-5.321" fill="#8900ff" rx="4.407" ry="29.108" transform="rotate(37.892 61.728 -5.32)"/></g><g filter="url(#l)"><ellipse cx="55.618" cy="7.104" fill="#00c2ff" rx="5.971" ry="9.665" transform="rotate(37.892 55.618 7.104)"/></g><g filter="url(#m)"><ellipse cx="12.326" cy="39.103" fill="#8900ff" rx="4.407" ry="29.108" transform="rotate(37.892 12.326 39.103)"/></g><g filter="url(#n)"><ellipse cx="12.326" cy="39.103" fill="#8900ff" rx="4.407" ry="29.108" transform="rotate(37.892 12.326 39.103)"/></g><g filter="url(#o)"><ellipse cx="49.857" cy="30.678" fill="#8900ff" rx="4.407" ry="29.108" transform="rotate(37.892 49.857 30.678)"/></g><g filter="url(#p)"><ellipse cx="52.623" cy="33.171" fill="#00c2ff" rx="5.971" ry="15.297" transform="rotate(37.892 52.623 33.17)"/></g></g><path d="M6.919 0c-9.198 13.166-9.252 33.575 0 46.789h6.215c-9.25-13.214-9.196-33.623 0-46.789zm62.424 0h-6.215c9.198 13.166 9.252 33.575 0 46.789h6.215c9.25-13.214 9.196-33.623 0-46.789" class="parenthesis"/><defs><filter id="b" width="60.045" height="41.654" x="-5.564" y="16.92" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="7.659"/></filter><filter id="c" width="90.34" height="51.437" x="-40.407" y="-6.762" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="7.659"/></filter><filter id="d" width="79.355" height="29.4" x="-35.435" y="2.801" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="4.596"/></filter><filter id="e" width="79.579" height="29.4" x="-30.84" y="20.8" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="4.596"/></filter><filter id="f" width="79.579" height="29.4" x="-29.307" y="21.949" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="4.596"/></filter><filter id="g" width="74.749" height="58.852" x="29.961" y="-17.13" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="7.659"/></filter><filter id="h" width="61.377" height="25.362" x="37.754" y="3.055" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="4.596"/></filter><filter id="i" width="61.377" height="25.362" x="37.754" y="3.055" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="4.596"/></filter><filter id="j" width="56.045" height="63.649" x="-13.43" y="-22.082" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="4.596"/></filter><filter id="k" width="54.814" height="64.646" x="34.321" y="-37.644" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="4.596"/></filter><filter id="l" width="33.541" height="35.313" x="38.847" y="-10.552" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="4.596"/></filter><filter id="m" width="54.814" height="64.646" x="-15.081" y="6.78" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="4.596"/></filter><filter id="n" width="54.814" height="64.646" x="-15.081" y="6.78" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="4.596"/></filter><filter id="o" width="54.814" height="64.646" x="22.45" y="-1.645" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="4.596"/></filter><filter id="p" width="39.409" height="43.623" x="32.919" y="11.36" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="4.596"/></filter></defs></svg>
-</file>
+from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from crawler import get_stock_info, get_stock_history
+from analyzer import calculate_moving_average, get_summary
+from ai_analyzer import analyze_stock
 
-<file path="src/components/StockCard.jsx">
-function StockCard({ info, summary }) {
-    return (
-        <div className="card">
-            <div className="card-header">
-                <div>
-                    <h2>{info.公司名稱}</h2>
-                    <span className="symbol">{info.股票代號}</span>
-                </div>
-                <div className="price">${info.目前股價}</div>
-            </div>
+app = FastAPI(title="股票資料 API", version="1.0.0")
 
-            {/* 基本指標 */}
-            <div className="metrics">
-                <div className="metric">
-                    <span className="label">52週最高</span>
-                    <span className="value">${info["52週最高"]}</span>
-                </div>
-                <div className="metric">
-                    <span className="label">52週最低</span>
-                    <span className="value">${info["52週最低"]}</span>
-                </div>
-                <div className="metric">
-                    <span className="label">本益比</span>
-                    <span className="value">
-                        {info.本益比 !== "N/A" ? Number(info.本益比).toFixed(2) : "N/A"}
-                    </span>
-                </div>
-                <div className="metric">
-                    <span className="label">期間漲跌</span>
-                    <span className={`value ${summary.期間漲跌幅.startsWith("+") ? "up" : "down"}`}>
-                        {summary.期間漲跌幅}
-                    </span>
-                </div>
-            </div>
-
-            {/* 統計摘要 */}
-            <div className="summary">
-                <div className="summary-row">
-                    <span>分析期間</span>
-                    <span>{summary.分析期間}</span>
-                </div>
-                <div className="summary-row">
-                    <span>起始收盤價</span>
-                    <span>${summary.起始收盤價}</span>
-                </div>
-                <div className="summary-row">
-                    <span>最新收盤價</span>
-                    <span>${summary.最新收盤價}</span>
-                </div>
-                <div className="summary-row">
-                    <span>期間最高價</span>
-                    <span>${summary.期間最高價}</span>
-                </div>
-                <div className="summary-row">
-                    <span>期間最低價</span>
-                    <span>${summary.期間最低價}</span>
-                </div>
-                <div className="summary-row">
-                    <span>平均成交量</span>
-                    <span>{summary.平均成交量}</span>
-                </div>
-            </div>
-        </div>
-    )
-}
-
-export default StockCard
-</file>
-
-<file path="src/components/StockChart.jsx">
-import {
-    LineChart, Line, XAxis, YAxis,
-    CartesianGrid, Tooltip, Legend, ResponsiveContainer
-} from "recharts"
-
-function StockChart({ data }) {
-    if (!data || data.length === 0) return null
-
-    return (
-        <div className="card">
-            <h3>股價走勢圖</h3>
-            <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={data}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#333" />
-                    <XAxis
-                        dataKey="日期"
-                        tick={{ fontSize: 11 }}
-                        tickFormatter={val => val.slice(5)}  // 只顯示 月-日
-                    />
-                    <YAxis
-                        domain={["auto", "auto"]}
-                        tick={{ fontSize: 11 }}
-                        tickFormatter={val => `$${val}`}
-                    />
-                    <Tooltip
-                        formatter={(value) => [`$${value}`, ""]}
-                        labelFormatter={(label) => `日期：${label}`}
-                    />
-                    <Legend />
-                    <Line type="monotone" dataKey="收盤" stroke="#4f9cf9" dot={false} strokeWidth={2} />
-                    <Line type="monotone" dataKey="MA5" stroke="#f9a84f" dot={false} strokeWidth={1.5} strokeDasharray="4 2" />
-                    <Line type="monotone" dataKey="MA20" stroke="#4ff9a8" dot={false} strokeWidth={1.5} strokeDasharray="4 2" />
-                </LineChart>
-            </ResponsiveContainer>
-        </div>
-    )
-}
-
-export default StockChart
-</file>
-
-<file path="src/index.css">
-:root {
-  --text: #6b6375;
-  --text-h: #08060d;
-  --bg: #fff;
-  --border: #e5e4e7;
-  --code-bg: #f4f3ec;
-  --accent: #aa3bff;
-  --accent-bg: rgba(170, 59, 255, 0.1);
-  --accent-border: rgba(170, 59, 255, 0.5);
-  --social-bg: rgba(244, 243, 236, 0.5);
-  --shadow:
-    rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
-
-  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --mono: ui-monospace, Consolas, monospace;
-
-  font: 18px/145% var(--sans);
-  letter-spacing: 0.18px;
-  color-scheme: light dark;
-  color: var(--text);
-  background: var(--bg);
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-
-  @media (max-width: 1024px) {
-    font-size: 16px;
-  }
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --text: #9ca3af;
-    --text-h: #f3f4f6;
-    --bg: #16171d;
-    --border: #2e303a;
-    --code-bg: #1f2028;
-    --accent: #c084fc;
-    --accent-bg: rgba(192, 132, 252, 0.15);
-    --accent-border: rgba(192, 132, 252, 0.5);
-    --social-bg: rgba(47, 48, 58, 0.5);
-    --shadow:
-      rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
-  }
-
-  #social .button-icon {
-    filter: invert(1) brightness(2);
-  }
-}
-
-body {
-  margin: 0;
-}
-
-#root {
-  width: 1126px;
-  max-width: 100%;
-  margin: 0 auto;
-  text-align: center;
-  border-inline: 1px solid var(--border);
-  min-height: 100svh;
-  display: flex;
-  flex-direction: column;
-  box-sizing: border-box;
-}
-
-h1,
-h2 {
-  font-family: var(--heading);
-  font-weight: 500;
-  color: var(--text-h);
-}
-
-h1 {
-  font-size: 56px;
-  letter-spacing: -1.68px;
-  margin: 32px 0;
-  @media (max-width: 1024px) {
-    font-size: 36px;
-    margin: 20px 0;
-  }
-}
-h2 {
-  font-size: 24px;
-  line-height: 118%;
-  letter-spacing: -0.24px;
-  margin: 0 0 8px;
-  @media (max-width: 1024px) {
-    font-size: 20px;
-  }
-}
-p {
-  margin: 0;
-}
-
-code,
-.counter {
-  font-family: var(--mono);
-  display: inline-flex;
-  border-radius: 4px;
-  color: var(--text-h);
-}
-
-code {
-  font-size: 15px;
-  line-height: 135%;
-  padding: 4px 8px;
-  background: var(--code-bg);
-}
-</file>
-
-<file path="src/main.jsx">
-import { StrictMode } from 'react'
-import { createRoot } from 'react-dom/client'
-import './index.css'
-import App from './App.jsx'
-
-createRoot(document.getElementById('root')).render(
-  <StrictMode>
-    <App />
-  </StrictMode>,
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
-</file>
 
-<file path="vite.config.js">
-import { defineConfig } from 'vite'
-import { default as react } from '@vitejs/plugin-react'
 
-const backendUrl = process.env.VITE_BACKEND_URL || 'http://127.0.0.1:8000'
+# ── 首頁 ──────────────────────────────────────
+@app.get("/")
+def root():
+    return {"message": "股票 API 運作中 🚀"}
 
-export default defineConfig({
-  plugins: [react()],
-  server: {
-    proxy: {
-      '/stock': backendUrl,
+
+# ── 主要端點：基本資訊 + 統計 + K線 ──────────
+@app.get("/stock/{symbol}")
+def get_stock(symbol: str, period: str = "3mo"):
+    try:
+        info = get_stock_info(symbol)
+        df = get_stock_history(symbol, period)
+
+        if df.empty:
+            raise HTTPException(status_code=404, detail=f"找不到股票：{symbol}")
+
+        df = calculate_moving_average(df)
+        summary = get_summary(df)
+
+        # Alpha Vantage 額度用完時，用 yfinance 資料補股價
+        if info["目前股價"] == "N/A" or info["目前股價"] == 0:
+            info["目前股價"] = float(df["Close"].iloc[-1])
+            info["52週最高"] = float(df["High"].max())
+            info["52週最低"] = float(df["Low"].min())
+
+        # 整理近 60 筆 K 線
+        history = []
+        for date, row in df[["Open", "High", "Low", "Close", "Volume", "MA5", "MA20"]].tail(60).iterrows():
+            history.append({
+                "日期": str(date.date()),
+                "開盤": row["Open"],
+                "最高": row["High"],
+                "最低": row["Low"],
+                "收盤": row["Close"],
+                "成交量": int(row["Volume"]),
+                "MA5": None if str(row["MA5"]) == "nan" else row["MA5"],
+                "MA20": None if str(row["MA20"]) == "nan" else row["MA20"],
+            })
+
+        return {
+            "基本資訊": info,
+            "統計摘要": summary,
+            "歷史資料": history,
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ── AI 分析 ───────────────────────────────────
+@app.get("/stock/{symbol}/ai")
+def get_ai_analysis(symbol: str, period: str = "3mo"):
+    try:
+        info = get_stock_info(symbol)
+        df = get_stock_history(symbol, period)
+
+        if df.empty:
+            raise HTTPException(status_code=404, detail=f"找不到股票：{symbol}")
+
+        df = calculate_moving_average(df)
+        summary = get_summary(df)
+        analysis = analyze_stock(info, summary)
+
+        return {"股票代號": symbol, "AI分析": analysis}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ── 環境變數確認 ──────────────────────────────
+@app.get("/debug")
+def debug():
+    import os
+    def mask(key): 
+        val = os.environ.get(key, "❌ 空的")
+        return val[:8] + "..." if val != "❌ 空的" else val
+
+    return {
+        "ALPHA_VANTAGE_KEY": mask("ALPHA_VANTAGE_KEY"),
+        "GROQ_API_KEY": mask("GROQ_API_KEY"),
     }
-  },
-  build: {
-    outDir: 'dist',
-  }
-})
 </file>
 
-<file path=".gitignore">
-# Logs
-logs
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
+<file path="stock-crawler/crawler.py">
+# crawler.py
 
-node_modules
-dist
-dist-ssr
-*.local
+import requests
+import yfinance as yf
+import pandas as pd
+import os
+from pathlib import Path
+from dotenv import load_dotenv
 
-# Editor directories and files
-.vscode/*
-!.vscode/extensions.json
-.idea
-.DS_Store
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
+load_dotenv(dotenv_path=Path(__file__).parent / ".env")
+
+ALPHA_VANTAGE_KEY = os.environ.get("ALPHA_VANTAGE_KEY", "")
+BASE_URL = "https://www.alphavantage.co/query"
+
+
+def get_stock_info(symbol: str) -> dict:
+    """基本資訊：優先 Alpha Vantage，額度用完自動改用 yfinance"""
+
+    # ── 先試 Alpha Vantage ──────────────────────
+    try:
+        res = requests.get(BASE_URL, params={
+            "function": "OVERVIEW",
+            "symbol": symbol,
+            "apikey": ALPHA_VANTAGE_KEY,
+        }, timeout=10)
+        data = res.json()
+
+        if "Symbol" in data:
+            return {
+                "股票代號": symbol,
+                "公司名稱": data.get("Name", "N/A"),
+                "目前股價": float(data.get("200DayMovingAverage") or 0),
+                "52週最高": float(data.get("52WeekHigh") or 0),
+                "52週最低": float(data.get("52WeekLow") or 0),
+                "市值": data.get("MarketCapitalization", "N/A"),
+                "本益比": data.get("PERatio", "N/A"),
+            }
+
+        print(f"⚠️ Alpha Vantage 無資料，改用 yfinance 備援")
+
+    except Exception as e:
+        print(f"⚠️ Alpha Vantage 錯誤: {e}，改用 yfinance 備援")
+
+    # ── Alpha Vantage 失敗 → yfinance 備援 ──────
+    try:
+        ticker = yf.Ticker(symbol)
+        info = ticker.info  # yfinance 的基本資訊
+
+        return {
+            "股票代號": symbol,
+            "公司名稱": info.get("longName") or info.get("shortName") or symbol,
+            "目前股價": info.get("currentPrice") or info.get("regularMarketPrice") or 0,
+            "52週最高": info.get("fiftyTwoWeekHigh") or 0,
+            "52週最低": info.get("fiftyTwoWeekLow") or 0,
+            "市值": str(info.get("marketCap", "N/A")),
+            "本益比": str(info.get("trailingPE", "N/A")),
+        }
+
+    except Exception as e:
+        print(f"❌ yfinance 備援也失敗: {e}")
+        return {
+            "股票代號": symbol,
+            "公司名稱": symbol,   # 最後保底：直接顯示代號
+            "目前股價": 0,
+            "52週最高": 0,
+            "52週最低": 0,
+            "市值": "N/A",
+            "本益比": "N/A",
+        }
+
+
+def get_stock_history(symbol: str, period: str = "3mo") -> pd.DataFrame:
+    try:
+        # yf.download 比 Ticker.history 在雲端更穩定
+        df = yf.download(
+            symbol,
+            period=period,
+            progress=False,   # 關掉進度條
+            auto_adjust=True  # 自動調整除權息
+        )
+
+        if df.empty:
+            print(f"⚠️ yfinance 回傳空資料: {symbol}")
+            return pd.DataFrame()
+
+        # yf.download 回傳多層欄位，需要壓平
+        if isinstance(df.columns, pd.MultiIndex):
+            df.columns = df.columns.get_level_values(0)
+
+        df.index = pd.to_datetime(df.index).tz_localize(None)
+        return df.round(2)
+
+    except Exception as e:
+        print(f"❌ get_stock_history 錯誤: {e}")
+        return pd.DataFrame()
 </file>
 
 </files>

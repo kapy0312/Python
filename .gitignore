@@ -10,3 +10,5 @@ data/
 
 # 環境變數（保護 API 金鑰用，之後會用到）
 .env
+
+repomix-output.xml

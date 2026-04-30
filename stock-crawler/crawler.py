@@ -93,3 +93,15 @@ def get_stock_history(symbol: str, period: str = "3mo") -> pd.DataFrame:
     except Exception as e:
         print(f"❌ get_stock_history 錯誤: {e}")
         return pd.DataFrame()
+
+
+def save_to_csv(df: pd.DataFrame, symbol: str) -> str:
+    """把歷史資料存成 CSV 檔案"""
+    from datetime import datetime
+
+    os.makedirs("data", exist_ok=True)
+    today = datetime.now().strftime("%Y%m%d")
+    filename = f"data/{symbol}_{today}.csv"
+    df.to_csv(filename, encoding="utf-8-sig")
+    print(f"✅ 已儲存：{filename}")
+    return filename
