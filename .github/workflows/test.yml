@@ -10,6 +10,15 @@ jobs:
   test:
     runs-on: ubuntu-latest
 
+    env:
+        ALPHA_VANTAGE_KEY: ${{ secrets.ALPHA_VANTAGE_KEY }}  # ← 改這裡
+        GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}            # ← 改這裡
+        DB_HOST: localhost
+        DB_PORT: 5432
+        DB_NAME: stockdb
+        DB_USER: postgres
+        DB_PASSWORD: password
+
     steps:
       - name: 拉下程式碼
         uses: actions/checkout@v4
@@ -35,11 +44,3 @@ jobs:
         run: |
           cd stock-crawler
           python -c "from api import app; print('✅ API 載入成功')"
-        env:
-          ALPHA_VANTAGE_KEY: ${{ secrets.ALPHA_VANTAGE_KEY }}  # ← 改這裡
-          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}            # ← 改這裡
-          DB_HOST: localhost
-          DB_PORT: 5432
-          DB_NAME: stockdb
-          DB_USER: postgres
-          DB_PASSWORD: password
