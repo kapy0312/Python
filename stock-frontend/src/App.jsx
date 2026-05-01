@@ -1,7 +1,10 @@
+// App.jsx
+
 import { useState, useEffect } from "react"   // ← 補上 useEffect
 import StockCard from "./components/StockCard"
 import StockChart from "./components/StockChart"
 import "./App.css"
+import { version } from "../package.json"
 
 const API_URL = import.meta.env.VITE_API_URL || ""
 
@@ -166,7 +169,18 @@ function App() {
           )}
         </>
       )}
-    </div>
+
+      {/* 版本資訊 */}
+      <a
+        href="https://portaly.cc/kapy0312"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="version-tag"
+        >
+        ✨ v{version} · Crafted by KapyLai ☕
+      </a>
+
+    </div >
   )
 }
 
