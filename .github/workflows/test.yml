@@ -1,0 +1,45 @@
+name: 測試後端
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 拉下程式碼
+        uses: actions/checkout@v4
+
+      - name: 安裝 Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+
+      - name: 安裝套件
+        run: |
+          cd stock-crawler
+          pip install -r requirements.txt
+
+      - name: 測試各模組能不能載入
+        run: |
+          cd stock-crawler
+          python -c "from analyzer import calculate_moving_average, get_summary; print('✅ analyzer OK')"
+          python -c "from ai_analyzer import analyze_stock; print('✅ ai_analyzer OK')"
+          python -c "from crawler import get_stock_info, get_stock_history; print('✅ crawler OK')"
+
+      - name: 測試 API 能不能啟動
+        run: |
+          cd stock-crawler
+          python -c "from api import app; print('✅ API 載入成功')"
+        env:
+          ALPHA_VANTAGE_KEY: test
+          GROQ_API_KEY: test
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_NAME: stockdb
+          DB_USER: postgres
+          DB_PASSWORD: password
