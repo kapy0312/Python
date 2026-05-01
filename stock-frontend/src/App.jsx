@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"   // ← 補上 useEffect
 import StockCard from "./components/StockCard"
 import StockChart from "./components/StockChart"
 import "./App.css"
@@ -14,6 +14,23 @@ function App() {
   const [loading, setLoading] = useState(false)
   const [aiLoading, setAiLoading] = useState(false)
   const [error, setError] = useState("")
+  const [history, setHistory] = useState([])   // ← 新增
+
+  // ── 拉取查詢紀錄 ─────────────────────────────  ← 新增
+  async function fetchHistory() {
+    try {
+      const res = await fetch(`${API_URL}/history?limit=5`)
+      const data = await res.json()
+      setHistory(data.查詢紀錄 || [])
+    } catch (err) {
+      console.error("無法取得查詢紀錄")
+    }
+  }
+
+  // ── 頁面載入時自動拉取紀錄 ───────────────────  ← 新增
+  useEffect(() => {
+    fetchHistory()
+  }, [])
 
   // ── 查詢股票 ────────────────────────────────
   async function handleSearch() {
@@ -42,6 +59,7 @@ function App() {
       setError(err.message)
     } finally {
       setLoading(false)
+      fetchHistory()   // ← 這行沒加到
     }
   }
 
@@ -98,6 +116,27 @@ function App() {
 
       {/* 錯誤訊息 */}
       {error && <div className="error">⚠️ {error}</div>}
+
+      {/* 查詢紀錄 ← 新增 */}
+      {history.length > 0 && (
+        <div className="card">
+          <h3>🕐 最近查詢紀錄</h3>
+          <div className="summary">
+            {history.map((item, i) => (
+              <div className="summary-row" key={i}>
+                <span
+                  style={{ cursor: "pointer", color: "#4f9cf9" }}
+                  onClick={() => setSymbol(item.股票代號)}
+                >
+                  {item.股票代號}
+                </span>
+                <span>{item.公司名稱}</span>
+                <span>{item.查詢時間.slice(0, 16)}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* 查詢結果 */}
       {stockData && (

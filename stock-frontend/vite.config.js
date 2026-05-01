@@ -8,6 +8,7 @@ export default defineConfig({
   server: {
     proxy: {
       '/stock': backendUrl,
+      '/history': backendUrl,   // ← 加這行
     }
   },
   build: {

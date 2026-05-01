@@ -1,10 +1,11 @@
-#api.py
+# api.py
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from crawler import get_stock_info, get_stock_history
 from analyzer import calculate_moving_average, get_summary
 from ai_analyzer import analyze_stock
+from database import save_search_history, get_search_history, init_db
 
 app = FastAPI(title="股票資料 API", version="1.0.0")
 
@@ -15,6 +16,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+init_db()   # ← 啟動時自動建表
 
 # ── 首頁 ──────────────────────────────────────
 @app.get("/")
@@ -55,6 +57,14 @@ def get_stock(symbol: str, period: str = "3mo"):
                 "MA20": None if str(row["MA20"]) == "nan" else row["MA20"],
             })
 
+        # ← 加這行，查詢完自動存紀錄
+        save_search_history(
+            symbol=symbol,
+            company=info.get("公司名稱", "N/A"),
+            price=float(df["Close"].iloc[-1]),
+            period=period
+        )
+
         return {
             "基本資訊": info,
             "統計摘要": summary,
@@ -93,7 +103,8 @@ def get_ai_analysis(symbol: str, period: str = "3mo"):
 @app.get("/debug")
 def debug():
     import os
-    def mask(key): 
+
+    def mask(key):
         val = os.environ.get(key, "❌ 空的")
         return val[:8] + "..." if val != "❌ 空的" else val
 
@@ -101,3 +112,12 @@ def debug():
         "ALPHA_VANTAGE_KEY": mask("ALPHA_VANTAGE_KEY"),
         "GROQ_API_KEY": mask("GROQ_API_KEY"),
     }
+
+# ── 查詢歷史紀錄 ──────────────────────────────
+
+
+@app.get("/history")
+def get_history(limit: int = 10):
+    """查詢最近搜尋過的股票"""
+    records = get_search_history(limit)
+    return {"查詢紀錄": records}
