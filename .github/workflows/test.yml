@@ -1,4 +1,4 @@
-name: 測試後端與前端
+name: 測試所有專案
 
 on:
   push:
@@ -7,7 +7,8 @@ on:
     branches: [main]
 
 jobs:
-  test-backend:
+  # ── 股票專案後端 ──────────────────────────────
+  test-stock-backend:
     runs-on: ubuntu-latest
 
     env:
@@ -46,7 +47,8 @@ jobs:
           cd stock-crawler
           python -c "from api import app; print('✅ API 載入成功')"
 
-  test-frontend:
+  # ── 股票專案前端 ──────────────────────────────
+  test-stock-frontend:
     runs-on: ubuntu-latest
 
     env:
@@ -64,5 +66,60 @@ jobs:
       - name: 安裝套件並 Build
         run: |
           cd stock-frontend
+          npm install
+          npm run build
+
+  # ── 記帳專案後端 ──────────────────────────────
+  test-budget-backend:
+    runs-on: ubuntu-latest
+
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+      DB_HOST: localhost
+      DB_PORT: 5432
+      DB_NAME: budgetdb
+      DB_USER: postgres
+      DB_PASSWORD: password
+
+    steps:
+      - name: 拉下程式碼
+        uses: actions/checkout@v4
+
+      - name: 安裝 Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+
+      - name: 安裝套件
+        run: |
+          cd budget-tracker
+          pip install -r requirements.txt
+
+      - name: 測試模組能載入
+        run: |
+          cd budget-tracker
+          python -c "from tracker.models import Category, Transaction, Investment; print('✅ models OK')"
+          python -c "from tracker.serializers import CategorySerializer; print('✅ serializers OK')"
+          python -c "from tracker.views import CategoryViewSet; print('✅ views OK')"
+
+  # ── 記帳專案前端 ──────────────────────────────
+  test-budget-frontend:
+    runs-on: ubuntu-latest
+
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+    steps:
+      - name: 拉下程式碼
+        uses: actions/checkout@v4
+
+      - name: 安裝 Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: 安裝套件並 Build
+        run: |
+          cd budget-frontend
           npm install
           npm run build
