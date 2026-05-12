@@ -59,7 +59,10 @@ export default function MonthlyChart() {
               background: "#1a1d2e",
               border: "1px solid #2d3148",
             }}
-            formatter={(value: number) => [`$${value.toLocaleString()}`, ""]}
+            formatter={(value: number | string | undefined) => [
+              `$${Number(value ?? 0).toLocaleString()}`,
+              "",
+            ]}
           />
           <Legend />
           <Bar dataKey="收入" fill="#51cf66" radius={[4, 4, 0, 0]} />

@@ -34,7 +34,7 @@ export default function AssetPieChart({ portfolio }: Props) {
             outerRadius={100}
             dataKey="value"
             label={({ name, percent }) =>
-              `${name} ${(percent * 100).toFixed(1)}%`
+              `${name} ${((percent ?? 0) * 100).toFixed(1)}%`
             }
           >
             {data.map((_, index) => (
@@ -46,7 +46,10 @@ export default function AssetPieChart({ portfolio }: Props) {
               background: "#1a1d2e",
               border: "1px solid #2d3148",
             }}
-            formatter={(value: number) => [`$${value.toLocaleString()}`, ""]}
+            formatter={(value: number | string | undefined) => [
+              `$${Number(value ?? 0).toLocaleString()}`,
+              "",
+            ]}
           />
           <Legend />
         </PieChart>
