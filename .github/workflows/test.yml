@@ -99,9 +99,8 @@ jobs:
       - name: 測試模組能載入
         run: |
           cd budget-tracker
-          python -c "from tracker.models import Category, Transaction, Investment; print('✅ models OK')"
-          python -c "from tracker.serializers import CategorySerializer; print('✅ serializers OK')"
-          python -c "from tracker.views import CategoryViewSet; print('✅ views OK')"
+          python manage.py check
+          echo "✅ Django 檢查通過"
 
   # ── 記帳專案前端 ──────────────────────────────
   test-budget-frontend:
