@@ -46,10 +46,6 @@ export default function AssetPieChart({ portfolio }: Props) {
               background: "#1a1d2e",
               border: "1px solid #2d3148",
             }}
-            formatter={(value: number | string | undefined) => [
-              `$${Number(value ?? 0).toLocaleString()}`,
-              "",
-            ]}
           />
           <Legend />
         </PieChart>
